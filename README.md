@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/ambitioninc/django-entity-emailer.svg?branch=develop)](https://travis-ci.org/ambitioninc/django-entity-emailer)
 
 Django Entity Emailer
 ==================================================
