@@ -39,7 +39,6 @@ setup(
         'django>=1.6',
     ],
     tests_require=[
-        'psycopg2',
         'django-nose',
         'south',
         'mock',
