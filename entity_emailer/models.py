@@ -20,7 +20,7 @@ class Email(models.Model):
     the given template with the given context
 
     """
-    email_type = models.ForeignKey(EmailType)
+    email_type = models.ForeignKey('EmailType')
     send_to = models.ForeignKey(Entity)
     subentities = models.BooleanField()
     template_path = models.CharField(max_length=256)
@@ -44,5 +44,5 @@ class EmailType(models.Model):
 class Unsubscribed(models.Model):
     """Users who have opted out of recieving certain types of email.
     """
-    user = models.ForeignKey(entity)
+    user = models.ForeignKey(Entity)
     unsubscribed_from = models.ForeignKey(EmailType)
