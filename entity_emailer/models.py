@@ -17,3 +17,8 @@ class Email(models.Model):
 class EmailType(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField()
+
+
+class Unsubscribed(models.Model):
+    user = models.ForeignKey(entity)
+    unsubscribed_from = models.ForeignKey(EmailType)
