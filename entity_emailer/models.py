@@ -4,7 +4,7 @@ from jsonfield import JSONField
 
 
 class Email(models.Model):
-    """Save an entity_emailer.Email object and it is sent automagically!
+    """Save an Email object and it is sent automagically!
 
     If an Email object is saved without a `scheduled` time, it will
     immediately and automatically be sent.
