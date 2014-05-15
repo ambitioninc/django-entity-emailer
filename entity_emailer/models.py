@@ -1,3 +1,4 @@
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from entity.models import Entity
 from jsonfield import JSONField
@@ -22,7 +23,7 @@ class Email(models.Model):
     """
     email_type = models.ForeignKey('EmailType')
     send_to = models.ForeignKey(Entity)
-    subentities = models.BooleanField()
+    subentity_type = models.ForeignKey(ContentType, null=True)
     template_path = models.CharField(max_length=256)
     context = JSONField()
     uid = models.CharField(max_length=100, unique=True, null=True)
