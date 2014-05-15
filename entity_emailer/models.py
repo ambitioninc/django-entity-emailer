@@ -37,7 +37,7 @@ class EmailType(models.Model):
     over
 
     """
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, unique=True)
     description = models.TextField()
 
 
