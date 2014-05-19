@@ -24,6 +24,7 @@ class Email(models.Model):
     email_type = models.ForeignKey('EmailType')
     send_to = models.ForeignKey(Entity)
     subentity_type = models.ForeignKey(ContentType, null=True)
+    subject = models.CharField(max_length=256)
     template_path = models.CharField(max_length=256)
     context = JSONField()
     uid = models.CharField(max_length=100, unique=True, null=True)
