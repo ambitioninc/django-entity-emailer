@@ -15,5 +15,5 @@ def handle_email_save(sender, **kwargs):
         return
 
     # This import occurs here to prevent circular import errors.
-    from entity_emailer.tasks import send_email_async_now
-    send_email_async_now(email)
+    from entity_emailer.tasks import SendEmailAsyncNow
+    SendEmailAsyncNow().delay(email=email)

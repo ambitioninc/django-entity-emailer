@@ -16,7 +16,7 @@ class Test_handle_email_save(TestCase):
         )
         self.send_to = G(Entity)
 
-    @patch('entity_emailer.tasks.send_email_async_now')
+    @patch('entity_emailer.tasks.SendEmailAsyncNow')
     def test_calls_send_email_async_now(self, email_async_mock):
         Email.objects.create(
             email_type=self.email_type,
@@ -29,9 +29,9 @@ class Test_handle_email_save(TestCase):
             scheduled=None,
             sent=None,
         )
-        self.assertTrue(email_async_mock.called)
+        self.assertTrue(email_async_mock.return_value.delay.called)
 
-    @patch('entity_emailer.tasks.send_email_async_now')
+    @patch('entity_emailer.tasks.SendEmailAsyncNow')
     def test_scheduled_emails_dont_call_async_email(self, email_async_mock):
         Email.objects.create(
             email_type=self.email_type,
