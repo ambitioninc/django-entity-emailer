@@ -3,11 +3,6 @@ from django.db import models
 from entity.models import Entity
 from jsonfield import JSONField
 
-from entity_emailer.handlers import handle_email_save
-
-# make flake8 happy
-assert handle_email_save
-
 
 class Email(models.Model):
     """Save an Email object and it is sent automagically!
@@ -52,3 +47,11 @@ class Unsubscribed(models.Model):
     """
     user = models.ForeignKey(Entity)
     unsubscribed_from = models.ForeignKey(EmailType)
+
+
+# Register the email save handler. This must be done at the end of the
+# file to avoid a circular import.
+from entity_emailer import handlers
+
+# make flake8 happy
+assert handlers
