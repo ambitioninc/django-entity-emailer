@@ -3,6 +3,11 @@ from django.db import models
 from entity.models import Entity
 from jsonfield import JSONField
 
+from entity_emailer.handlers import handle_email_save
+
+# make flake8 happy
+assert handle_email_save
+
 
 class Email(models.Model):
     """Save an Email object and it is sent automagically!
