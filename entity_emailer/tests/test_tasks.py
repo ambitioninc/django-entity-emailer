@@ -57,3 +57,15 @@ class Test_get_html_message(TestCase):
         rendered = tasks.get_html_message(email)
         expected_rendered = 'Hi. This is a test.'
         self.assertEqual(rendered, expected_rendered)
+
+
+class Test_get_text_message(TestCase):
+    @patch('__builtin__.open')
+    def test_renders_with_context(self, open_mock):
+        template_string = 'Hi. This is a {{ value }}.'
+        context = {'value': 'test'}
+        open_mock.return_value.__enter__.return_value.read.return_value = template_string
+        email = N(Email, context=context, text_template_path='some/path')
+        rendered = tasks.get_text_message(email)
+        expected_rendered = 'Hi. This is a test.'
+        self.assertEqual(rendered, expected_rendered)
