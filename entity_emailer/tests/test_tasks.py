@@ -2,6 +2,7 @@ from entity.models import Entity, EntityRelationship
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from django_dynamic_fixture import G, N
+from mock import patch
 
 from entity_emailer import tasks
 from entity_emailer.models import Email, EmailType, Unsubscribed
@@ -44,3 +45,15 @@ class Test_get_email_addresses(TestCase):
         addresses = tasks.get_email_addresses(email)
         expected_addresses = {u'test_sub2@example.com'}
         self.assertEqual(set(addresses), expected_addresses)
+
+
+class Test_get_html_message(TestCase):
+    @patch('__builtin__.open')
+    def test_renders_with_context(self, open_mock):
+        template_string = 'Hi. This is a {{ value }}.'
+        context = {'value': 'test'}
+        open_mock.return_value.__enter__.return_value.read.return_value = template_string
+        email = N(Email, context=context, template_path='some/path')
+        rendered = tasks.get_html_message(email)
+        expected_rendered = 'Hi. This is a test.'
+        self.assertEqual(rendered, expected_rendered)

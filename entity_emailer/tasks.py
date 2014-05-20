@@ -1,6 +1,6 @@
 from celery import Task
 from django.core.mail import send_mail
-from django.template import Template
+from django.template import Context, Template
 
 from entity_emailer.models import Unsubscribed
 
@@ -48,4 +48,4 @@ def get_html_message(email):
     """
     with open(email.template_path) as message_template_file:
         message_template = Template(message_template_file.read())
-    return message_template.render(email.context)
+    return message_template.render(Context(email.context))
