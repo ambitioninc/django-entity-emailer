@@ -1,5 +1,5 @@
 from celery import Task
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.template import Context, Template
 
 from entity_emailer.models import Unsubscribed
@@ -10,13 +10,14 @@ class SendEmailAsyncNow(Task):
         email = kwargs.get('email')
         to_email_addresses = get_email_addresses(email)
         html_message = get_html_message(email)
-        send_mail(
+        text_message = get_text_message(email)
+        email = EmailMultiAlternatives(
             subject=email.subject,
-            message=html_message,
-            from_email='TODO.IMPORT.THIS.FROM.SOME.TYPE.OF.SETTING@example.com',
-            recipient_list=to_email_addresses,
-            html_message=html_message,
+            body=text_message,
+            to=to_email_addresses,
         )
+        email.attach_alternative(html_message, 'text/html')
+        email.send()
 
 
 def get_email_addresses(email):

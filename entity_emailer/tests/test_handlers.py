@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 
 from entity.models import Entity
-from django_dynamic_fixture import G
+from django.core import mail
 from django.test import TestCase
+from django.test.utils import override_settings
+from django_dynamic_fixture import G
 from mock import patch
 
 from entity_emailer.models import Email, EmailType
@@ -47,3 +49,16 @@ class Test_handle_email_save(TestCase):
             sent=None,
         )
         self.assertFalse(email_async_mock.called)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.get_html_message')
+    @patch('entity_emailer.tasks.get_text_message')
+    @patch('entity_emailer.tasks.get_email_addresses')
+    def test_actually_sends_immediate_email(self, address_mock, text_mock, html_mock):
+        """Test the whole pathway.
+        """
+        html_mock.return_value = 'This is a test text email.'
+        text_mock.return_value = '<p>This is a test html email.</p>'
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        G(Email, context={}, scheduled=None)
+        self.assertEqual(len(mail.outbox), 1)
