@@ -4,7 +4,7 @@ from django.test import TestCase
 from django_dynamic_fixture import G, N
 
 from entity_emailer import tasks
-from entity_emailer.models import Email, Unsubscribed
+from entity_emailer.models import Email, EmailType, Unsubscribed
 
 
 class Test_get_email_addresses(TestCase):
@@ -38,4 +38,9 @@ class Test_get_email_addresses(TestCase):
         self.assertEqual(set(addresses), expected_addresses)
 
     def test_unsubscription_works(self):
-        pass
+        test_email_type = G(EmailType, name='test_email')
+        G(Unsubscribed, user=self.sub_entity_1, unsubscribed_from=test_email_type)
+        email = N(Email, send_to=self.super_entity, subentity_type=self.ct, email_type=test_email_type, context={})
+        addresses = tasks.get_email_addresses(email)
+        expected_addresses = {u'test_sub2@example.com'}
+        self.assertEqual(set(addresses), expected_addresses)
