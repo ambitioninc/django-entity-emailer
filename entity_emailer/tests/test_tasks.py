@@ -32,7 +32,10 @@ class Test_get_email_addresses(TestCase):
         self.assertEqual(set(addresses), expected_addresses)
 
     def test_returns_own_email(self):
-        pass
+        email = N(Email, send_to=self.super_entity, subentity_type=None, context={})
+        addresses = tasks.get_email_addresses(email)
+        expected_addresses = {u'test_super@example.com'}
+        self.assertEqual(set(addresses), expected_addresses)
 
     def test_unsubscription_works(self):
         pass
