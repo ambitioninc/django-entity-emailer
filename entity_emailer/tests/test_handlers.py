@@ -62,3 +62,17 @@ class Test_handle_email_save(TestCase):
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         G(Email, context={}, scheduled=None)
         self.assertEqual(len(mail.outbox), 1)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.get_html_message')
+    @patch('entity_emailer.tasks.get_text_message')
+    @patch('entity_emailer.tasks.get_email_addresses')
+    def test_from_field_pulled_from_settings(self, address_mock, text_mock, html_mock):
+        """settings.DEFAULT_FROM_EMAIL should be passed through.
+        """
+        html_mock.return_value = 'This is a test text email.'
+        text_mock.return_value = '<p>This is a test html email.</p>'
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        G(Email, context={}, scheduled=None)
+        from_email = mail.outbox[0].from_email
+        self.assertEqual(from_email, 'test@example.com')
