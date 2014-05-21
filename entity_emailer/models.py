@@ -23,14 +23,14 @@ class Email(models.Model):
     """
     email_type = models.ForeignKey('EmailType')
     send_to = models.ForeignKey(Entity)
-    subentity_type = models.ForeignKey(ContentType, null=True)
+    subentity_type = models.ForeignKey(ContentType, null=True, default=None)
     subject = models.CharField(max_length=256)
     html_template_path = models.CharField(max_length=256)
     text_template_path = models.CharField(max_length=256)
     context = JSONField()
-    uid = models.CharField(max_length=100, unique=True, null=True)
-    scheduled = models.DateTimeField(null=True)
-    sent = models.DateTimeField(null=True)
+    uid = models.CharField(max_length=100, unique=True, null=True, default=None)
+    scheduled = models.DateTimeField(null=True, default=None)
+    sent = models.DateTimeField(null=True, default=None)
 
 
 class EmailType(models.Model):
