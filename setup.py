@@ -37,7 +37,7 @@ setup(
     license='MIT',
     install_requires=[
         'django>=1.6',
-        'django-entity>=0.3.5',
+        'django-entity>=0.4',
         'celery>=3.1',
     ],
     tests_require=[
