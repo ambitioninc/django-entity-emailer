@@ -48,5 +48,4 @@ def configure_settings():
             ROOT_URLCONF='entity_emailer.urls',
             DEFAULT_FROM_EMAIL='test@example.com',
             DEBUG=False,
-            SOUTH_TESTS_MIGRATE=False,
         )
