@@ -51,6 +51,7 @@ def get_html_message(email):
         message_template = Template(message_template_file.read())
     return message_template.render(Context(email.context))
 
+
 def get_text_message(email):
     """Load and render the template.
 
