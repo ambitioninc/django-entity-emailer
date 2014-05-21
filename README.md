@@ -23,7 +23,7 @@ from source:
     git clone
     python setup.py install
 
-Comming soon: `pip install`.
+Coming soon: `pip install`.
 
 
 Setup and Configuration
@@ -56,7 +56,7 @@ asynchronously.
 
 A prerequisite to sending an email is categorizing it into an
 email-type. Categorizing emails into types makes it easier to allow
-users to unsubscribe from types of emails they don't wish to recieve.
+users to unsubscribe from types of emails they don't wish to receive.
 
 ``` python
 from entity.models import Entity
@@ -110,7 +110,7 @@ that has a super-entity relationship to the entities the emails are to
 be sent to.
 
 Second, a `subentity_type` field specifies what type of subentity we
-want to email All subentities of the `send_to` entity and of the type
+want to email All sub-entities of the `send_to` entity and of the type
 specified by `subentity_type` must have an 'email' set in their
 `entity_meta`.
 
@@ -143,10 +143,10 @@ Email.objects.create(
 ```
 
 Once this email is saved to the database, the email will be sent to all
-of the subentities of the `marketing_news_today` entity automatically.
+of the sub-entities of the `marketing_news_today` entity automatically.
 
 This allows you to email any group of users that exists in your django
-application without having to write custom orm queries to pull that
+application without having to write custom ORM queries to pull that
 group out of the database and organize their email addresses.
 
 
@@ -167,5 +167,5 @@ Unsubscribed.objects.create(
 )
 ```
 
-This user will be excluded both from recieving emails of this type
+This user will be excluded both from receiving emails of this type
 that were sent to them individually, or as part of a group email.
