@@ -148,3 +148,24 @@ of the subentities of the `marketing_news_today` entity automatically.
 This allows you to email any group of users that exists in your django
 application without having to write custom orm queries to pull that
 group out of the database and organize their email addresses.
+
+
+Unsubscribing
+--------------------------------------------------
+
+Users may want to be able to unsubscribe from certain types of
+emails. This is easy in django-entity-emailer. Emails can be
+unsubscribed from by individual `EmailType`.
+
+```python
+from entity_emailer import EmailType, Unsubscribed
+
+admin_emails = EmailType.objects.get(name='admin')
+Unsubscribed.objects.create(
+    user=entity_of_user_to_unsub,
+    email_type=admin_emails
+)
+```
+
+This user will be excluded both from recieving emails of this type
+that were sent to them individually, or as part of a group email.
