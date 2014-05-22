@@ -8,7 +8,7 @@ from entity_emailer import tasks
 from entity_emailer.models import Email, EmailType, Unsubscribed
 
 
-class Test_get_email_addresses(TestCase):
+class GetEmailAddressesTest(TestCase):
     def setUp(self):
         self.ct = ContentType.objects.get_for_model(Email)
         self.ct2 = ContentType.objects.get_for_model(Unsubscribed)
@@ -47,7 +47,7 @@ class Test_get_email_addresses(TestCase):
         self.assertEqual(set(addresses), expected_addresses)
 
 
-class Test_get_html_message(TestCase):
+class GetHtmlMessageTest(TestCase):
     @patch('__builtin__.open')
     def test_renders_with_context(self, open_mock):
         template_string = 'Hi. This is a {{ value }}.'
@@ -59,7 +59,7 @@ class Test_get_html_message(TestCase):
         self.assertEqual(rendered, expected_rendered)
 
 
-class Test_get_text_message(TestCase):
+class GetTextMessageTest(TestCase):
     @patch('__builtin__.open')
     def test_renders_with_context(self, open_mock):
         template_string = 'Hi. This is a {{ value }}.'

@@ -10,7 +10,7 @@ from mock import patch
 from entity_emailer.models import Email, EmailType
 
 
-class Test_handle_email_save(TestCase):
+class HandelEmailSaveTest(TestCase):
     def setUp(self):
         self.email_type = EmailType.objects.create(
             name='test_email',
