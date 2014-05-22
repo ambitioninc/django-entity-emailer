@@ -42,7 +42,6 @@ def get_email_addresses(email):
     dont_send_to = frozenset(
         Unsubscribed.objects.filter(unsubscribed_from=email.email_type).values_list('entity', flat=True)
     )
-    print dont_send_to
     send_to = (e for e in all_entities if e.id not in dont_send_to)
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
