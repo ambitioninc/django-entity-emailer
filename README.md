@@ -45,6 +45,34 @@ If both of those conditions are true, setup is fairly straightforward:
 4. Be sure that `django.contrib.contenttypes` is in `INSTALLED_APPS`.
 5. Run `python manage.py syncdb`
 
+### Getting `'email'` into `'entity_meta'`
+
+The requirement that entities be mirrored with an `'email'` field in
+their `entity_meta` is not difficult.
+
+After installing django-entity, it is as simple as creating a model
+inheriting from `entity.BaseEntityModel`, with a `get_entity_meta`
+that returns the email along with any other data to be mirrored. A
+simple example could be:
+
+```python
+from django.db import models
+from entity import BaseEntityModel
+
+class Account(BaseEntityModel)
+    username = models.CharField(max_length=64)
+    email = models.CharField(max_length=254)
+
+    def get_entity_meta(self):
+        return {'email': self.email, 'username': self.username}
+```
+
+Also note that it is not necessary for every mirrored entity to
+include an email, only those entities that will actually be sent
+emails need to have emails mirrored in their `entity_meta`s.
+
+For a more complete description of how entity mirroring works, see the
+documentation for django-entity.
 
 Send an Email Immediately
 --------------------------------------------------
@@ -122,7 +150,7 @@ from entity_emailer.models import Email
 from entity.models import Entity
 from django.contrib.contenttypes import ContentType
 
-from my_example_app.models import Newsletter, NewletterSubscribers
+from my_example_app.models import Newsletter, NewsletterSubscribers
 
 # This send_to_entity has sub-entities we want to send to.
 marketing_news_today = Newsletter.objects.get(name='Marketing News Today')
@@ -134,7 +162,7 @@ Email.objects.create(
     # NewsletterSubscribers
     send_to=send_to_entity,
     # Below is our subentity type, NewsletterSubscribers
-    subentity_type=ContentType.objects.get_for_model(NewletterSubscribers)
+    subentity_type=ContentType.objects.get_for_model(NewsletterSubscribers)
     subject='This is a great offer!',
     html_template_path='/path/to/templates/html/marketing1.html',
     text_template_path='/path/to/templates/text/marketing1.txt',
