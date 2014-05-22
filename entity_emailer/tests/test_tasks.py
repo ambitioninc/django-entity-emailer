@@ -39,7 +39,7 @@ class GetEmailAddressesTest(TestCase):
 
     def test_unsubscription_works(self):
         test_email_type = G(EmailType, name='test_email')
-        G(Unsubscribed, user=self.sub_entity_1, unsubscribed_from=test_email_type)
+        G(Unsubscribed, entity=self.sub_entity_1, unsubscribed_from=test_email_type)
         email = N(Email, send_to=self.super_entity, subentity_type=self.ct, email_type=test_email_type, context={})
         addresses = tasks.get_email_addresses(email)
         expected_addresses = {u'test_sub2@example.com'}

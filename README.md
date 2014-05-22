@@ -190,7 +190,7 @@ from entity_emailer import EmailType, Unsubscribed
 
 admin_emails = EmailType.objects.get(name='admin')
 Unsubscribed.objects.create(
-    user=entity_of_user_to_unsub,
+    entity=entity_of_user_to_unsub,
     email_type=admin_emails
 )
 ```

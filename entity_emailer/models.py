@@ -43,9 +43,9 @@ class EmailType(models.Model):
 
 
 class Unsubscribed(models.Model):
-    """Users who have opted out of recieving certain types of email.
+    """Entities (users) who have opted out of recieving types of email.
     """
-    user = models.ForeignKey(Entity)
+    entity = models.ForeignKey(Entity)
     unsubscribed_from = models.ForeignKey(EmailType)
 
 
