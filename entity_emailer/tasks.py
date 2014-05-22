@@ -28,7 +28,6 @@ def get_email_addresses(email):
 
     Returns:
       A list of strings: email addresses.
-
     """
     if email.subentity_type is not None:
         all_entities = email.send_to.get_sub_entities().is_type(email.subentity_type)

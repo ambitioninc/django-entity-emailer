@@ -19,7 +19,6 @@ class Email(models.Model):
 
     Sending an email happens automatically, and consists of rendering
     the given template with the given context
-
     """
     email_type = models.ForeignKey('EmailType')
     send_to = models.ForeignKey(Entity)
@@ -38,7 +37,6 @@ class EmailType(models.Model):
 
     Defining categories makes it easier for users to have some control
     over
-
     """
     name = models.CharField(max_length=64, unique=True)
     description = models.TextField()
