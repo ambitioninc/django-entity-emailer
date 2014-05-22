@@ -33,8 +33,10 @@ def get_email_addresses(email):
         all_entities = email.send_to.get_sub_entities().is_type(email.subentity_type)
     else:
         all_entities = [email.send_to]
-    dont_send_to = Unsubscribed.objects.filter(
-        unsubscribed_from=email.email_type).select_related('entity')
-    send_to = set(all_entities) - set(unsub.entity for unsub in dont_send_to)
+    dont_send_to = frozenset(
+        Unsubscribed.objects.filter(unsubscribed_from=email.email_type).values_list('entity', flat=True)
+    )
+    print dont_send_to
+    send_to = (e for e in all_entities if e.id not in dont_send_to)
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
