@@ -39,11 +39,16 @@ entities must include a value for the key `'email'` in their
 If both of those conditions are true, setup is fairly straightforward:
 
 1. Add `entity_emailer` to `INSTALLED_APPS`.
-2. Be sure that the `settings.DEFAULT_FROM_EMAIL` is set to an
-   appropriate value. This is what will be sent in the 'from' field of
-   emails.
+2. Either set a value for `settings.ENTITY_EMAILER_FROM_EMAIL`, or be
+   sure that the `settings.DEFAULT_FROM_EMAIL` is set to an
+   appropriate value. 
 4. Be sure that `django.contrib.contenttypes` is in `INSTALLED_APPS`.
 5. Run `python manage.py syncdb`
+
+When sending an email, django-entity-emailer will first check if the
+`ENTITY_EMAILER_FROM_EMAIL` exists. If it does, it will use that value
+in the email's 'from' field, otherwise it will fall back to the value
+set in `DEFAULT_FROM_EMAIL`.
 
 ### Getting `'email'` into `'entity_meta'`
 

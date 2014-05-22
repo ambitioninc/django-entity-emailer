@@ -65,7 +65,7 @@ class HandelEmailSaveTest(TestCase):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('entity_emailer.tasks.render_to_string')
     @patch('entity_emailer.tasks.get_email_addresses')
-    def test_from_field_pulled_from_settings(self, address_mock, loader_mock):
+    def test_from_field_pulled_from_default_settings(self, address_mock, loader_mock):
         """settings.DEFAULT_FROM_EMAIL should be passed through.
         """
         loader_mock.side_effect = ['<p>This is a test html email.</p>',
@@ -74,3 +74,17 @@ class HandelEmailSaveTest(TestCase):
         G(Email, context={}, scheduled=None)
         from_email = mail.outbox[0].from_email
         self.assertEqual(from_email, 'test@example.com')
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.render_to_string')
+    @patch('entity_emailer.tasks.get_email_addresses')
+    def test_from_field_pulled_from_custom_settings(self, address_mock, loader_mock):
+        """settings.DEFAULT_FROM_EMAIL should be passed through.
+        """
+        loader_mock.side_effect = ['<p>This is a test html email.</p>',
+                                   'This is a test text email.']
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        with patch('django.conf.settings.ENTITY_EMAILER_FROM_EMAIL', new='test_entity@example.com', create=True):
+            G(Email, context={}, scheduled=None)
+        from_email = mail.outbox[0].from_email
+        self.assertEqual(from_email, 'test_entity@example.com')
