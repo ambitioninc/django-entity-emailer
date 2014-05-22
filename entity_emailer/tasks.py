@@ -1,6 +1,6 @@
 from celery import Task
 from django.core.mail import EmailMultiAlternatives
-from django.template import Context, Template
+from django.template.loader import render_to_string
 
 from entity_emailer.models import Unsubscribed
 
@@ -9,8 +9,8 @@ class SendEmailAsyncNow(Task):
     def run(*args, **kwargs):
         email = kwargs.get('email')
         to_email_addresses = get_email_addresses(email)
-        html_message = get_html_message(email)
-        text_message = get_text_message(email)
+        html_message = render_to_string(email.html_template_path, email.context)
+        text_message = render_to_string(email.text_template_path, email.context)
         email = EmailMultiAlternatives(
             subject=email.subject,
             body=text_message,
@@ -37,27 +37,3 @@ def get_email_addresses(email):
     send_to = set(all_entities) - set(unsub.user for unsub in dont_send_to)
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
-
-
-def get_html_message(email):
-    """Load and render the template.
-
-    Returns:
-      A string containing the HTML email message, with the context provided
-      in the email object.
-    """
-    with open(email.html_template_path) as message_template_file:
-        message_template = Template(message_template_file.read())
-    return message_template.render(Context(email.context))
-
-
-def get_text_message(email):
-    """Load and render the template.
-
-    Returns:
-      A string containing the text email message, with the context provided
-      in the email object.
-    """
-    with open(email.text_template_path) as message_template_file:
-        message_template = Template(message_template_file.read())
-    return message_template.render(Context(email.context))
