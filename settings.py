@@ -1,5 +1,6 @@
 import os
 
+from celery import Celery
 from django.conf import settings
 
 
@@ -7,6 +8,12 @@ def configure_settings():
     """
     Configures settings for manage.py and for run_tests.py.
     """
+
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
+    app = Celery('entity_emailer')
+    app.config_from_object('django.conf:settings')
+    app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+
     if not settings.configured:
         # Determine the database settings depending on if a test_db var is set in CI mode or not
         test_db = os.environ.get('DB', 'sqlite')
@@ -34,9 +41,11 @@ def configure_settings():
                 'django.contrib.sessions',
                 'django.contrib.admin',
                 'south',
+                'entity',
                 'entity_emailer',
                 'entity_emailer.tests',
             ),
             ROOT_URLCONF='entity_emailer.urls',
+            DEFAULT_FROM_EMAIL='test@example.com',
             DEBUG=False,
         )

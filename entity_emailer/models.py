@@ -19,16 +19,17 @@ class Email(models.Model):
 
     Sending an email happens automatically, and consists of rendering
     the given template with the given context
-
     """
     email_type = models.ForeignKey('EmailType')
     send_to = models.ForeignKey(Entity)
-    subentity_type = models.ForeignKey(ContentType, null=True)
-    template_path = models.CharField(max_length=256)
+    subentity_type = models.ForeignKey(ContentType, null=True, default=None)
+    subject = models.CharField(max_length=256)
+    html_template_path = models.CharField(max_length=256)
+    text_template_path = models.CharField(max_length=256)
     context = JSONField()
-    uid = models.CharField(max_length=100, unique=True, null=True)
-    scheduled = models.DateTimeField(null=True)
-    sent = models.DateTimeField(null=True)
+    uid = models.CharField(max_length=100, unique=True, null=True, default=None)
+    scheduled = models.DateTimeField(null=True, default=None)
+    sent = models.DateTimeField(null=True, default=None)
 
 
 class EmailType(models.Model):
@@ -36,14 +37,21 @@ class EmailType(models.Model):
 
     Defining categories makes it easier for users to have some control
     over
-
     """
     name = models.CharField(max_length=64, unique=True)
     description = models.TextField()
 
 
 class Unsubscribed(models.Model):
-    """Users who have opted out of recieving certain types of email.
+    """Entities (users) who have opted out of recieving types of email.
     """
-    user = models.ForeignKey(Entity)
+    entity = models.ForeignKey(Entity)
     unsubscribed_from = models.ForeignKey(EmailType)
+
+
+# Register the email save handler. This must be done at the end of the
+# file to avoid a circular import.
+from entity_emailer import handlers
+
+# make flake8 happy
+assert handlers
