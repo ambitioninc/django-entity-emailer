@@ -62,10 +62,13 @@ def render_templates(email):
         rendered_text = render_to_string(
             email.template.text_template_path, email.context
         )
+        print 'YEAH!'
     elif email.template.text_template:
         context = Context(email.context)
         rendered_text = Template(email.template.text_template).render(context)
+        print 'HEY!'
     else:
+        print 'WHAT!'
         rendered_text = ''
 
     # Process html template
