@@ -93,7 +93,7 @@ users to unsubscribe from types of emails they don't wish to receive.
 
 ``` python
 from entity.models import Entity
-from entity_emailer.models import Email, EmailType
+from entity_emailer.models import Email, EmailTemplate, EmailType
 
 marketing_email_type, created = EmailType.objects.get_or_create(
     name='marketing',
@@ -101,8 +101,24 @@ marketing_email_type, created = EmailType.objects.get_or_create(
 )
 ```
 
-Once an email type has been created, sending an email is as simple as
-creating an email field without specifying a `scheduled` field.
+We also need to create an `EmailTemplate` for the context of our email
+to fill in. An email template is simply a reference to a django
+template to be filled in with some context.
+
+This object can use a path that Django's template loaders will
+understand, or store the template directly as a TextField. Here, we're
+storing a simple text template.
+
+```python
+new_item_template = EmailTemplate.objects.create(
+    template_name='simple item email',
+    template_text='Check out {{ item }} for the price of {{ value }}!'
+)
+```
+
+Once an email type and template have been created, sending an email is
+as simple as creating an email field without specifying a `scheduled`
+field.
 
 ```python
 send_to_entity = Entity.objects.get_for_obj(some_user_with_an_email)
@@ -111,8 +127,7 @@ Email.objects.create(
     email_type=marketing_email_type,
     send_to=send_to_entity,
     subject='This is a great offer!',
-    html_template_path='/path/to/templates/html/marketing1.html',
-    text_template_path='/path/to/templates/text/marketing1.txt',
+    template=new_item_template,
     context={'item': 'new car', 'value': '$35,000'}
 )
 ```
@@ -202,3 +217,28 @@ Unsubscribed.objects.create(
 
 This user will be excluded both from receiving emails of this type
 that were sent to them individually, or as part of a group email.
+
+
+Email Templates
+--------------------------------------------------
+
+Instance of `EmailTemplate` are used to store email templates that can
+be re-used with different contexts.
+
+The possible fields on `EmailTemplate` are:
+
+- `template_name` - Required. A descriptive name for the template.
+- `text_template_path` - A path to a template for a text email.
+- `html_template_path` - A path to a template for an html email.
+- `text_template` - A TextField for inputing a text email template directly.
+- `html_template` - A TextField for inputing an html email template directly.
+
+Both a text and html template may be provided, either
+through a path to the template, or a raw template object.
+
+However, for either text or html templates, both a path and raw
+template should not be provided.
+
+The email sending task will take care of rendering the template,
+and creating a text or text/html message based on the rendered
+template.
