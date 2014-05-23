@@ -88,3 +88,21 @@ class HandelEmailSaveTest(TestCase):
             G(Email, context={}, scheduled=None)
         from_email = mail.outbox[0].from_email
         self.assertEqual(from_email, 'test_entity@example.com')
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.get_email_addresses')
+    def test_sends_text_email(self, address_mock):
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        template = G(EmailTemplate, text_template='Hi')
+        G(Email, template=template, context={}, scheduled=None)
+        self.assertEqual(mail.outbox[0].body, 'Hi')
+        self.assertEqual(mail.outbox[0].attachments, [])
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.get_email_addresses')
+    def test_sends_html_email(self, address_mock):
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        template = G(EmailTemplate, html_template='Hi', text_template='Hi')
+        G(Email, template=template, context={}, scheduled=None)
+        self.assertEqual(mail.outbox[0].body, 'Hi')
+        self.assertEqual(len(mail.outbox[0].alternatives), 1)
