@@ -24,12 +24,35 @@ class Email(models.Model):
     send_to = models.ForeignKey(Entity)
     subentity_type = models.ForeignKey(ContentType, null=True, default=None)
     subject = models.CharField(max_length=256)
-    html_template_path = models.CharField(max_length=256)
-    text_template_path = models.CharField(max_length=256)
+    template = models.ForeignKey('EmailTemplate')
     context = JSONField()
     uid = models.CharField(max_length=100, unique=True, null=True, default=None)
     scheduled = models.DateTimeField(null=True, default=None)
     sent = models.DateTimeField(null=True, default=None)
+
+
+class EmailTemplate(models.Model):
+    """A template for email to be sent. Rendered by django with context.
+
+    Of the four fields: `text_template_path`, 'html_template_path',
+    `text_template`, and `html_template`, at least one must be
+    non-empty.
+
+    Both a text and html template may be provided, either
+    through a path to the template, or a raw template object.
+
+    However, for either text or html templates, both a path and raw
+    template should not be provided.
+
+    The email sending task will take care of rendering the template,
+    and creating a text or text/html message based on the rendered
+    template.
+    """
+    template_name = models.CharField(max_length=64, unique=True)
+    text_template_path = models.CharField(max_length=256, default='')
+    html_template_path = models.CharField(max_length=256, default='')
+    text_template = models.TextField(default='')
+    html_template = models.TextField(default='')
 
 
 class EmailType(models.Model):
