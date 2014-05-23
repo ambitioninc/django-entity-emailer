@@ -7,7 +7,7 @@ from django.test.utils import override_settings
 from django_dynamic_fixture import G
 from mock import patch
 
-from entity_emailer.models import Email, EmailType
+from entity_emailer.models import Email, EmailTemplate, EmailType
 
 
 class HandelEmailSaveTest(TestCase):
@@ -20,13 +20,13 @@ class HandelEmailSaveTest(TestCase):
 
     @patch('entity_emailer.tasks.SendEmailAsyncNow')
     def test_calls_send_email_async_now(self, email_async_mock):
+        template = G(EmailTemplate)
         Email.objects.create(
             email_type=self.email_type,
             send_to=self.send_to,
             subentity_type=None,
             subject='Test Email Please Ignore',
-            html_template_path='path/to/template',
-            text_template_path='path/to/template',
+            template=template,
             context={'some': 'content'},
             uid=None,
             scheduled=None,
@@ -36,13 +36,13 @@ class HandelEmailSaveTest(TestCase):
 
     @patch('entity_emailer.tasks.SendEmailAsyncNow')
     def test_scheduled_emails_dont_call_async_email(self, email_async_mock):
+        template = G(EmailTemplate)
         Email.objects.create(
             email_type=self.email_type,
             send_to=self.send_to,
             subentity_type=None,
             subject='Test Email Please Ignore',
-            html_template_path='path/to/template',
-            text_template_path='path/to/template',
+            template=template,
             context={'some': 'content'},
             uid=None,
             scheduled=datetime.utcnow() + timedelta(days=100),

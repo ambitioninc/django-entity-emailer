@@ -11,8 +11,7 @@ class SendEmailAsyncNow(Task):
     def run(*args, **kwargs):
         email = kwargs.get('email')
         to_email_addresses = get_email_addresses(email)
-        html_message = render_to_string(email.html_template_path, email.context)
-        text_message = render_to_string(email.text_template_path, email.context)
+        text_message, html_message = render_templates(email)
         try:
             from_email = settings.ENTITY_EMAILER_FROM_EMAIL
         except AttributeError:
