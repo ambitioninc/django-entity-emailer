@@ -2,6 +2,7 @@ from celery import Task
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.template import Context, Template
 
 from entity_emailer.models import Unsubscribed
 
@@ -45,3 +46,38 @@ def get_email_addresses(email):
     send_to = (e for e in all_entities if e.id not in dont_send_to)
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
+
+
+def render_templates(email):
+    """Render the correct templates with the correct context.
+
+    Args:
+      An email object. Contains references to template and context.
+
+    Returns:
+      A tuple of (rendered_text, rendered_html). Either, but not both
+      may be an empty string.
+    """
+    # Process text template:
+    if email.template.text_template_path:
+        rendered_text = render_to_string(
+            email.template.text_template_path, email.context
+        )
+    elif email.template.text_template:
+        context = Context(email.context)
+        rendered_text = Template(email.template.text_template).render(context)
+    else:
+        rendered_text = ''
+
+    # Process html template
+    if email.template.html_template_path:
+        rendered_html = render_to_string(
+            email.template.text_template_path, email.context
+        )
+    elif email.template.html_template:
+        context = Context(email.context)
+        rendered_html = Template(email.template.html_template).render(context)
+    else:
+        rendered_html = ''
+
+    return (rendered_text, rendered_html)
