@@ -58,10 +58,26 @@ class RenderTemplatesTest(TestCase):
         self.assertEqual(rendered_html, '')
 
     def test_text_textfield(self):
-        pass
+        template = G(EmailTemplate, text_template='Hi {{ name }}')
+        email = N(Email, template=template, context={'name': 'Mr. T'})
+        rendered_text, rendered_html = tasks.render_templates(email)
+        self.assertEqual(rendered_text, 'Hi Mr. T')
+        self.assertEqual(rendered_html, '')
 
-    def test_html_path(self):
-        pass
+    @patch('__builtin__.open')
+    def test_html_path(self, open_mock):
+        temp = '<html>Hi {{ name }}</html>'
+        open_mock.return_value.__enter__.return_value.read.return_value = temp
+        template = G(EmailTemplate, html_template_path='NotNothing')
+        email = N(Email, template=template, context={'name': 'Mr. T'})
+        rendered_text, rendered_html = tasks.render_templates(email)
+        self.assertEqual(rendered_text, '')
+        self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')
 
     def test_test_textfield(self):
-        pass
+        temp = '<html>Hi {{ name }}</html>'
+        template = G(EmailTemplate, html_template=temp)
+        email = N(Email, template=template, context={'name': 'Mr. T'})
+        rendered_text, rendered_html = tasks.render_templates(email)
+        self.assertEqual(rendered_text, '')
+        self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')
