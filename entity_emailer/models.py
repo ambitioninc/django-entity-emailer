@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db import models
 from entity.models import Entity
 from jsonfield import JSONField
@@ -53,6 +54,14 @@ class EmailTemplate(models.Model):
     html_template_path = models.CharField(max_length=256, default='')
     text_template = models.TextField(default='')
     html_template = models.TextField(default='')
+
+    def clean(self):
+        template_fields = [
+            self.text_template_path, self.html_template_path,
+            self.text_template, self.html_template
+        ]
+        if not any(template_fields):
+            raise ValidationError('At least one template source must be provided')
 
 
 class EmailType(models.Model):
