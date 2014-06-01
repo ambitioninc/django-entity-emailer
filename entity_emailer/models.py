@@ -62,7 +62,10 @@ class EmailTemplate(models.Model):
         ]
         if not any(template_fields):
             raise ValidationError('At least one template source must be provided')
-
+        if self.text_template_path and self.text_template:
+            raise ValidationError('Cannot provide a template path and template')
+        if self.html_template_path and self.html_template:
+            raise ValidationError('Cannot provide a template path and template')
 
 class EmailType(models.Model):
     """A broad category for emails being sent to users.

@@ -13,6 +13,22 @@ class EmailTemplateCleanTest(TestCase):
         template.clean()
         self.assertTrue(template)
 
-    def test_does_not_validate(self):
+    def test_no_template_does_not_validate(self):
         with self.assertRaises(ValidationError):
             EmailTemplate(template_name='empty').clean()
+
+    def test_double_text_does_not_validate(self):
+        with self.assertRaises(ValidationError):
+            EmailTemplate(
+                template_name='double_text',
+                text_template_path='test/path',
+                text_template='test template',
+            ).clean()
+
+    def test_double_html_does_not_validate(self):
+        with self.assertRaises(ValidationError):
+            EmailTemplate(
+                template_name='double_html',
+                html_template_path='test/path',
+                html_template='test template',
+            ).clean()
