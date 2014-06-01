@@ -101,13 +101,15 @@ marketing_email_type, created = EmailType.objects.get_or_create(
 )
 ```
 
-We also need to create an `EmailTemplate` for the context of our email
-to fill in. An email template is simply a reference to a django
-template to be filled in with some context.
+Before we can send an email, we also need to create an `EmailTemplate`
+for the context of our email to fill in. An email template is simply a
+reference to a django template to be filled in with some context.
 
 This object can use a path that Django's template loaders will
 understand, or store the template directly as a TextField. Here, we're
-storing a simple text template.
+storing a simple text template. The different possibilities for
+constructing an `EmailTemplate` object are discussed more deeply in
+the "Email Templates" section.
 
 ```python
 new_item_template = EmailTemplate.objects.create(
@@ -184,8 +186,7 @@ Email.objects.create(
     # Below is our subentity type, NewsletterSubscribers
     subentity_type=ContentType.objects.get_for_model(NewsletterSubscribers)
     subject='This is a great offer!',
-    html_template_path='/path/to/templates/html/marketing1.html',
-    text_template_path='/path/to/templates/text/marketing1.txt',
+    template=new_item_template,
     context={'item': 'new car', 'value': '$35,000'}
 )
 ```
@@ -233,11 +234,14 @@ The possible fields on `EmailTemplate` are:
 - `text_template` - A TextField for inputing a text email template directly.
 - `html_template` - A TextField for inputing an html email template directly.
 
-Both a text and html template may be provided, either
-through a path to the template, or a raw template object.
+Both a text and html template may be provided, either through a path
+to the template, or a raw template object. However, for either text or
+html templates, both a path and raw template should not be provided.
 
-However, for either text or html templates, both a path and raw
-template should not be provided.
+If all of `text_template_path`, `text_template`, `html_template_path`,
+and `html_template` are missing, if `text_template_path` and
+`text_template` are both provided, or if `html_template_path` and
+`html_template` are both provided, a `ValidationError` will be raised.
 
 The email sending task will take care of rendering the template,
 and creating a text or text/html message based on the rendered
