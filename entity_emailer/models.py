@@ -67,6 +67,11 @@ class EmailTemplate(models.Model):
         if self.html_template_path and self.html_template:
             raise ValidationError('Cannot provide a template path and template')
 
+    def save(self, *args, **kwargs):
+        self.clean()
+        super(EmailTemplate, self).save(*args, **kwargs)
+
+
 class EmailType(models.Model):
     """A broad category for emails being sent to users.
 

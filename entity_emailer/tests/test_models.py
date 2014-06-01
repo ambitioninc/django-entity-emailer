@@ -32,3 +32,9 @@ class EmailTemplateCleanTest(TestCase):
                 html_template_path='test/path',
                 html_template='test template',
             ).clean()
+
+
+class EmailTemplateSaveTest(TestCase):
+    def test_raises(self):
+        with self.assertRaises(ValidationError):
+            EmailTemplate(template_name='empty').save()
