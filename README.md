@@ -43,7 +43,9 @@ If both of those conditions are true, setup is fairly straightforward:
    sure that the `settings.DEFAULT_FROM_EMAIL` is set to an
    appropriate value. 
 4. Be sure that `django.contrib.contenttypes` is in `INSTALLED_APPS`.
-5. Run `python manage.py syncdb`
+5. Add the scheduled email task to your `CELERYBEAT_SCHEDULE` (see
+   configuring celery section).
+6. Run `python manage..py syncdb`
 
 When sending an email, django-entity-emailer will first check if the
 `ENTITY_EMAILER_FROM_EMAIL` exists. If it does, it will use that value
@@ -78,6 +80,33 @@ emails need to have emails mirrored in their `entity_meta`s.
 
 For a more complete description of how entity mirroring works, see the
 documentation for django-entity.
+
+
+### Configuring Celery
+
+To use the email scheduling feature of `entity_emailer`, you must add
+the appropriate task to your `CELERYBEAT_SCHEDULE`. For a general
+introduction to configuring periodic celery tasks in Django, see the
+official guide,
+[Celery Periodic Tasks](http://celery.readthedocs.org/en/latest/userguide/periodic-tasks.html).
+
+In short, it should be enough to add the following to your existing
+celerybeat schedule.
+
+```python
+CELERYBEAT_SCHEDULE = {
+    # ...
+    'send_scheduled_emails': {
+        'task': 'entity_emailer.tasks.SendUnsentScheduledEmails',
+        'schedule': timedelta(minutes=1),
+    },
+    # ...
+}
+```
+
+Making sure to use a value for `'schedule'` that is appropriate for
+the volume of emails, and server resources.
+
 
 Send an Email Immediately
 --------------------------------------------------
@@ -197,6 +226,36 @@ of the sub-entities of the `marketing_news_today` entity automatically.
 This allows you to email any group of users that exists in your django
 application without having to write custom ORM queries to pull that
 group out of the database and organize their email addresses.
+
+
+Send An Email at a Scheduled Time
+--------------------------------------------------
+
+Sending an email at a scheduled time is just as easy as sending one
+immediately. Assuming that the `CELERYBEAT_SCHEDULE` is correctly
+configured, as described in the "Setup and Configuration" section, the
+only difference from the process described above is that you must
+provide a value for the `scheduled` field.
+
+```python
+from datetime import datetime
+
+Email.objects.create(
+    email_type=marketing_email_type,
+    send_to=send_to_entity,
+    subentity_type=ContentType.objects.get_for_model(NewsletterSubscribers)
+    subject='This is a great offer!',
+    template=new_item_template,
+    context={'item': 'New Hoverboard', 'value': '$35,000'}
+    scheduled=datetime(year=2022, month=01, day=01, hour=12),
+)
+```
+
+The email created above will be sent at the time in the `scheduled`
+field, UTC.
+
+Additionally, scheduled emails that are processed at the same time
+will re-use a connection to the SMTP server to minimize overhead.
 
 
 Unsubscribing
