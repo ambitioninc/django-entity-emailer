@@ -11,14 +11,14 @@ from entity_emailer.models import Email, EmailType, EmailTemplate, Unsubscribed
 
 class CreateEmailObjectTest(TestCase):
     def test_no_html(self):
-        email = tasks.create_email_object(
+        email = tasks.create_email_message(
             ['to@example.com'], 'from@example.com', 'Subject', 'Email Body.', ''
         )
         email.send()
         self.assertEqual(mail.outbox[0].attachments, [])
 
     def test_html(self):
-        email = tasks.create_email_object(
+        email = tasks.create_email_message(
             ['to@example.com'], 'from@example.com', 'Subject', 'Email Body.', '<html>A</html>'
         )
         email.send()

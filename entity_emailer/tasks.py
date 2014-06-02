@@ -18,17 +18,17 @@ class SendEmailAsyncNow(Task):
         to_email_addresses = get_email_addresses(email)
         text_message, html_message = render_templates(email)
         from_email = get_from_email_address()
-        email = create_email_object(
+        message = create_email_message(
             to_emails=to_email_addresses,
             from_email=from_email,
             subject=email.subject,
             text=text_message,
             html=html_message,
         )
-        email.send()
+        message.send()
 
 
-def create_email_object(to_emails, from_email, subject, text, html):
+def create_email_message(to_emails, from_email, subject, text, html):
     """Create the appropriate plaintext or html email object.
 
     Returns:
