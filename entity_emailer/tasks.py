@@ -13,25 +13,41 @@ class SendEmailAsyncNow(Task):
         to_email_addresses = get_email_addresses(email)
         text_message, html_message = render_templates(email)
         from_email = get_from_email_address()
-        if not html_message:
-            # If there is no html message, we can send a text email.
-            mail.send_mail(
-                subject=email.subject,
-                message=text_message,
-                recipient_list=to_email_addresses,
-                from_email=from_email,
-            )
-        else:
-            # If there is an html message, we must attach it as an
-            # alternative.
-            email = mail.EmailMultiAlternatives(
-                subject=email.subject,
-                body=text_message,
-                to=to_email_addresses,
-                from_email=from_email,
-            )
-            email.attach_alternative(html_message, 'text/html')
-            email.send()
+        email = create_email_object(
+            to_emails=to_email_addresses,
+            from_email=from_email,
+            subject=email.subject,
+            text=text_message,
+            html=html_message,
+        )
+        email.send()
+
+
+def create_email_object(to_emails, from_email, subject, text, html):
+    """Create the appropriate plaintext or html email object.
+
+    Returns:
+
+       email - an instance of either `django.core.mail.EmailMessage` or
+       `django.core.mail.EmailMulitiAlternatives` based on whether or
+       not `html_message` is empty.
+    """
+    if not html:
+        email = mail.EmailMessage(
+            subject=subject,
+            body=text,
+            to=to_emails,
+            from_email=from_email,
+        )
+    else:
+        email = mail.EmailMultiAlternatives(
+            subject=subject,
+            body=text,
+            to=to_emails,
+            from_email=from_email,
+        )
+        email.attach_alternative(html, 'text/html')
+    return email
 
 
 def get_from_email_address():
