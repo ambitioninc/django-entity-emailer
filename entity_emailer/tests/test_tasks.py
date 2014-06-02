@@ -1,12 +1,69 @@
-from entity.models import Entity, EntityRelationship
+from datetime import datetime
+
 from django.contrib.contenttypes.models import ContentType
 from django.core import mail
 from django.test import TestCase
+from django.test.utils import override_settings
 from django_dynamic_fixture import G, N
+from entity.models import Entity, EntityRelationship
+from freezegun import freeze_time
 from mock import patch
 
 from entity_emailer import tasks
 from entity_emailer.models import Email, EmailType, EmailTemplate, Unsubscribed
+
+
+@freeze_time('2014-01-05')
+class SendUnsentScheduledEmailsTest(TestCase):
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.render_to_string')
+    @patch('entity_emailer.tasks.get_email_addresses')
+    def test_sends_all_scheduled_emails(self, address_mock, loader_mock):
+        loader_mock.side_effect = ['<p>This is a test html email.</p>',
+                                   'This is a test text email.']
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        template = G(EmailTemplate, text_template='Hi')
+        email = G(Email, template=template, context={}, scheduled=datetime.min)
+        email = G(Email, template=template, context={}, scheduled=datetime.min)
+        tasks.SendUnsentScheduledEmails().delay()
+        self.assertEqual(len(mail.outbox), 2)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.render_to_string')
+    @patch('entity_emailer.tasks.get_email_addresses')
+    def test_sends_no_future_emails(self, address_mock, loader_mock):
+        loader_mock.side_effect = ['<p>This is a test html email.</p>',
+                                   'This is a test text email.']
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        template = G(EmailTemplate, text_template='Hi')
+        email = G(Email, template=template, context={}, scheduled=datetime(2014, 01, 06))
+        tasks.SendUnsentScheduledEmails().delay()
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.render_to_string')
+    @patch('entity_emailer.tasks.get_email_addresses')
+    def test_sends_no_sent_emails(self, address_mock, loader_mock):
+        loader_mock.side_effect = ['<p>This is a test html email.</p>',
+                                   'This is a test text email.']
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        template = G(EmailTemplate, text_template='Hi')
+        email = G(Email, template=template, context={}, scheduled=datetime.min, sent=datetime.utcnow())
+        tasks.SendUnsentScheduledEmails().delay()
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.render_to_string')
+    @patch('entity_emailer.tasks.get_email_addresses')
+    def test_updates_times(self, address_mock, loader_mock):
+        loader_mock.side_effect = ['<p>This is a test html email.</p>',
+                                   'This is a test text email.']
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        template = G(EmailTemplate, text_template='Hi')
+        email = G(Email, template=template, context={}, scheduled=datetime.min)
+        tasks.SendUnsentScheduledEmails().delay()
+        sent_email = Email.objects.filter(sent__isnull=False)
+        self.assertEqual(sent_email.count(), 1)
 
 
 class CreateEmailObjectTest(TestCase):

@@ -10,9 +10,8 @@ from entity_emailer.models import Email
 def handle_email_save(sender, instance, **kwargs):
     """Spawn a task to send the email post-save.
     """
-    # If the email is scheduled for later, don't proccess it in
-    # post-save. It will be sent later, by the scheduler.
-    if instance.scheduled is not None and instance.scheduled > datetime.utcnow():
+    # If the email is scheduled, let it be run by the scheduler.
+    if instance.scheduled is not None:
         return
 
     # If the email has already been sent, don't process it in

@@ -6,7 +6,33 @@ from django.core import mail
 from django.template.loader import render_to_string
 from django.template import Context, Template
 
-from entity_emailer.models import Unsubscribed
+from entity_emailer.models import Email, Unsubscribed
+
+
+class SendUnsentScheduledEmails(Task):
+    """Send all unsent emails, whose scheduled time has passed.
+
+    This task should be added to a celery beat.
+    """
+    def run(*args, **kwargs):
+        current_time = datetime.utcnow()
+        to_send = Email.objects.filter(scheduled__lte = current_time, sent__isnull=True)
+        from_email = get_from_email_address()
+        emails = []
+        for email in to_send:
+            to_email_addresses = get_email_addresses(email)
+            text_message, html_message = render_templates(email)
+            message = create_email_message(
+                to_emails=to_email_addresses,
+                from_email=from_email,
+                subject=email.subject,
+                text=text_message,
+                html=html_message,
+            )
+            emails.append(message)
+        connection = mail.get_connection()
+        connection.send_messages(emails)
+        to_send.update(sent=current_time)
 
 
 class SendEmailAsyncNow(Task):
