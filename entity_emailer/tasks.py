@@ -8,6 +8,11 @@ from entity_emailer.models import Unsubscribed
 
 
 class SendEmailAsyncNow(Task):
+    """Sends an email in a separate task.
+
+    This task is spun up during the post-save signal sent when
+    `entity_emailer.models.Email` objects are saved.
+    """
     def run(*args, **kwargs):
         email = kwargs.get('email')
         to_email_addresses = get_email_addresses(email)
