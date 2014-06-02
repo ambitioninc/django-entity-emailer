@@ -1,11 +1,29 @@
 from entity.models import Entity, EntityRelationship
 from django.contrib.contenttypes.models import ContentType
+from django.core import mail
 from django.test import TestCase
 from django_dynamic_fixture import G, N
 from mock import patch
 
 from entity_emailer import tasks
 from entity_emailer.models import Email, EmailType, EmailTemplate, Unsubscribed
+
+
+class CreateEmailObjectTest(TestCase):
+    def test_no_html(self):
+        email = tasks.create_email_object(
+            ['to@example.com'], 'from@example.com', 'Subject', 'Email Body.', ''
+        )
+        email.send()
+        self.assertEqual(mail.outbox[0].attachments, [])
+
+    def test_html(self):
+        email = tasks.create_email_object(
+            ['to@example.com'], 'from@example.com', 'Subject', 'Email Body.', '<html>A</html>'
+        )
+        email.send()
+        expected_alternatives = [('<html>A</html>', 'text/html')]
+        self.assertEqual(mail.outbox[0].alternatives, expected_alternatives)
 
 
 class GetFromEmailAddressTest(TestCase):
