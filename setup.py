@@ -41,10 +41,11 @@ setup(
         'celery>=3.1',
     ],
     tests_require=[
+        'django-dynamic-fixture',
         'django-nose',
-        'south',
+        'freezegun',
         'mock',
-        'django-dynamic-fixture'
+        'south',
     ],
     test_suite='run_tests.run_tests',
     include_package_data=True,
