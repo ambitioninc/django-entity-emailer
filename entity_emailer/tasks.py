@@ -16,7 +16,7 @@ class SendUnsentScheduledEmails(Task):
     """
     def run(*args, **kwargs):
         current_time = datetime.utcnow()
-        to_send = Email.objects.filter(scheduled__lte = current_time, sent__isnull=True)
+        to_send = Email.objects.filter(scheduled__lte=current_time, sent__isnull=True)
         from_email = get_from_email_address()
         emails = []
         for email in to_send:

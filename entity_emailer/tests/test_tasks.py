@@ -23,8 +23,8 @@ class SendUnsentScheduledEmailsTest(TestCase):
                                    'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         template = G(EmailTemplate, text_template='Hi')
-        email = G(Email, template=template, context={}, scheduled=datetime.min)
-        email = G(Email, template=template, context={}, scheduled=datetime.min)
+        G(Email, template=template, context={}, scheduled=datetime.min)
+        G(Email, template=template, context={}, scheduled=datetime.min)
         tasks.SendUnsentScheduledEmails().delay()
         self.assertEqual(len(mail.outbox), 2)
 
@@ -36,7 +36,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
                                    'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         template = G(EmailTemplate, text_template='Hi')
-        email = G(Email, template=template, context={}, scheduled=datetime(2014, 01, 06))
+        G(Email, template=template, context={}, scheduled=datetime(2014, 01, 06))
         tasks.SendUnsentScheduledEmails().delay()
         self.assertEqual(len(mail.outbox), 0)
 
@@ -48,7 +48,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
                                    'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         template = G(EmailTemplate, text_template='Hi')
-        email = G(Email, template=template, context={}, scheduled=datetime.min, sent=datetime.utcnow())
+        G(Email, template=template, context={}, scheduled=datetime.min, sent=datetime.utcnow())
         tasks.SendUnsentScheduledEmails().delay()
         self.assertEqual(len(mail.outbox), 0)
 
@@ -60,7 +60,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
                                    'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         template = G(EmailTemplate, text_template='Hi')
-        email = G(Email, template=template, context={}, scheduled=datetime.min)
+        G(Email, template=template, context={}, scheduled=datetime.min)
         tasks.SendUnsentScheduledEmails().delay()
         sent_email = Email.objects.filter(sent__isnull=False)
         self.assertEqual(sent_email.count(), 1)
