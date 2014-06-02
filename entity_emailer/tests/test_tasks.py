@@ -8,6 +8,20 @@ from entity_emailer import tasks
 from entity_emailer.models import Email, EmailType, EmailTemplate, Unsubscribed
 
 
+class GetFromEmailAddressTest(TestCase):
+    def test_default_from_email(self):
+        # settings.DEFAULT_FROM_EMAIL is already set to test@example.com
+        from_email = tasks.get_from_email_address()
+        expected = 'test@example.com'
+        self.assertEqual(from_email, expected)
+
+    def test_entity_emailer_from_email(self):
+        with patch('django.conf.settings.ENTITY_EMAILER_FROM_EMAIL', new='test_entity@example.com', create=True):
+            from_email = tasks.get_from_email_address()
+            expected = 'test_entity@example.com'
+            self.assertEqual(from_email, expected)
+
+
 class GetEmailAddressesTest(TestCase):
     def setUp(self):
         self.ct = ContentType.objects.get_for_model(Email)

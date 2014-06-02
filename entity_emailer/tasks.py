@@ -1,6 +1,6 @@
 from celery import Task
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives, send_mail
+from django.core import mail
 from django.template.loader import render_to_string
 from django.template import Context, Template
 
@@ -12,13 +12,10 @@ class SendEmailAsyncNow(Task):
         email = kwargs.get('email')
         to_email_addresses = get_email_addresses(email)
         text_message, html_message = render_templates(email)
-        try:
-            from_email = settings.ENTITY_EMAILER_FROM_EMAIL
-        except AttributeError:
-            from_email = settings.DEFAULT_FROM_EMAIL
+        from_email = get_from_email_address()
         if not html_message:
             # If there is no html message, we can send a text email.
-            send_mail(
+            mail.send_mail(
                 subject=email.subject,
                 message=text_message,
                 recipient_list=to_email_addresses,
@@ -27,7 +24,7 @@ class SendEmailAsyncNow(Task):
         else:
             # If there is an html message, we must attach it as an
             # alternative.
-            email = EmailMultiAlternatives(
+            email = mail.EmailMultiAlternatives(
                 subject=email.subject,
                 body=text_message,
                 to=to_email_addresses,
@@ -35,6 +32,16 @@ class SendEmailAsyncNow(Task):
             )
             email.attach_alternative(html_message, 'text/html')
             email.send()
+
+
+def get_from_email_address():
+    """Get a 'from' address based on the django settings.
+    """
+    try:
+        from_email = settings.ENTITY_EMAILER_FROM_EMAIL
+    except AttributeError:
+        from_email = settings.DEFAULT_FROM_EMAIL
+    return from_email
 
 
 def get_email_addresses(email):
