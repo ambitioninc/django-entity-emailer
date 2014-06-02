@@ -15,6 +15,11 @@ def handle_email_save(sender, instance, **kwargs):
     if instance.scheduled is not None and instance.scheduled > datetime.utcnow():
         return
 
+    # If the email has already been sent, don't process it in
+    # post-save.
+    if instance.sent is not None:
+        return
+
     # This import occurs here to prevent circular import errors.
     from entity_emailer.tasks import SendEmailAsyncNow
     SendEmailAsyncNow().delay(email=instance)

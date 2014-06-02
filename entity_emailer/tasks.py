@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from celery import Task
 from django.conf import settings
 from django.core import mail
@@ -26,6 +28,8 @@ class SendEmailAsyncNow(Task):
             html=html_message,
         )
         message.send()
+        email.sent = datetime.utcnow()
+        email.save()
 
 
 def create_email_message(to_emails, from_email, subject, text, html):
