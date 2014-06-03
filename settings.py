@@ -36,6 +36,7 @@ def configure_settings():
                 'default': db_config,
             },
             INSTALLED_APPS=(
+                'db_mutex',
                 'django.contrib.auth',
                 'django.contrib.contenttypes',
                 'django.contrib.sessions',

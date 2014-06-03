@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from celery import Task
+from db_mutex import db_mutex
 from django.conf import settings
 from django.core import mail
 from django.template.loader import render_to_string
@@ -14,7 +15,11 @@ class SendUnsentScheduledEmails(Task):
 
     This task should be added to a celery beat.
     """
-    def run(*args, **kwargs):
+    def run(self, *args, **kwargs):
+        with db_mutex('send-unsent-scheduled-emails'):
+            self.run_worker(*args, **kwargs)
+
+    def run_worker(self, *args, **kwargs):
         current_time = datetime.utcnow()
         to_send = Email.objects.filter(scheduled__lte=current_time, sent__isnull=True)
         from_email = get_from_email_address()

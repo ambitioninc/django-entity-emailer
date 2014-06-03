@@ -41,11 +41,14 @@ If both of those conditions are true, setup is fairly straightforward:
 1. Add `entity_emailer` to `INSTALLED_APPS`.
 2. Either set a value for `settings.ENTITY_EMAILER_FROM_EMAIL`, or be
    sure that the `settings.DEFAULT_FROM_EMAIL` is set to an
-   appropriate value. 
-3. Be sure that `django.contrib.contenttypes` is in `INSTALLED_APPS`.
-4. Add the scheduled email task to your `CELERYBEAT_SCHEDULE` (see
+   appropriate value.
+3. Be sure that `djang-db-mutex` is installed and `db_mutex` is in
+   `INSTALLED_APPS`. Entity emailer uses db-mutexes to ensure that
+   emails don't get sent multiple times.
+4. Be sure that `django.contrib.contenttypes` is in `INSTALLED_APPS`.
+5. Add the scheduled email task to your `CELERYBEAT_SCHEDULE` (see
    configuring celery section).
-5. Run `python manage..py syncdb`
+6. Run `python manage..py syncdb`
 
 When sending an email, django-entity-emailer will first check if the
 `ENTITY_EMAILER_FROM_EMAIL` exists. If it does, it will use that value
