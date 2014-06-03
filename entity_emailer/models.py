@@ -89,11 +89,3 @@ class Unsubscribed(models.Model):
     """
     entity = models.ForeignKey(Entity)
     unsubscribed_from = models.ForeignKey(EmailType)
-
-
-# Register the email save handler. This must be done at the end of the
-# file to avoid a circular import.
-from entity_emailer import handlers
-
-# make flake8 happy
-assert handlers

@@ -35,29 +35,6 @@ class SendUnsentScheduledEmails(Task):
         to_send.update(sent=current_time)
 
 
-class SendEmailAsyncNow(Task):
-    """Sends an email in a separate task.
-
-    This task is spun up during the post-save signal sent when
-    `entity_emailer.models.Email` objects are saved.
-    """
-    def run(*args, **kwargs):
-        email = kwargs.get('email')
-        to_email_addresses = get_email_addresses(email)
-        text_message, html_message = render_templates(email)
-        from_email = get_from_email_address()
-        message = create_email_message(
-            to_emails=to_email_addresses,
-            from_email=from_email,
-            subject=email.subject,
-            text=text_message,
-            html=html_message,
-        )
-        message.send()
-        email.sent = datetime.utcnow()
-        email.save()
-
-
 def create_email_message(to_emails, from_email, subject, text, html):
     """Create the appropriate plaintext or html email object.
 
