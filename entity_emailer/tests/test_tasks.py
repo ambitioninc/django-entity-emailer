@@ -90,11 +90,11 @@ class GetFromEmailAddressTest(TestCase):
         expected = 'test@example.com'
         self.assertEqual(from_email, expected)
 
+    @override_settings(ENTITY_EMAILER_FROM_EMAIL='test_entity@example.com')
     def test_entity_emailer_from_email(self):
-        with patch('django.conf.settings.ENTITY_EMAILER_FROM_EMAIL', new='test_entity@example.com', create=True):
-            from_email = tasks.get_from_email_address()
-            expected = 'test_entity@example.com'
-            self.assertEqual(from_email, expected)
+        from_email = tasks.get_from_email_address()
+        expected = 'test_entity@example.com'
+        self.assertEqual(from_email, expected)
 
 
 class GetEmailAddressesTest(TestCase):
