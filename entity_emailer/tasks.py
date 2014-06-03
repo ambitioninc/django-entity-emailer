@@ -1,40 +1,94 @@
+from datetime import datetime
+
 from celery import Task
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives, send_mail
+from django.core import mail
 from django.template.loader import render_to_string
 from django.template import Context, Template
 
-from entity_emailer.models import Unsubscribed
+from entity_emailer.models import Email, Unsubscribed
+
+
+class SendUnsentScheduledEmails(Task):
+    """Send all unsent emails, whose scheduled time has passed.
+
+    This task should be added to a celery beat.
+    """
+    def run(*args, **kwargs):
+        current_time = datetime.utcnow()
+        to_send = Email.objects.filter(scheduled__lte=current_time, sent__isnull=True)
+        from_email = get_from_email_address()
+        emails = []
+        for email in to_send:
+            to_email_addresses = get_email_addresses(email)
+            text_message, html_message = render_templates(email)
+            message = create_email_message(
+                to_emails=to_email_addresses,
+                from_email=from_email,
+                subject=email.subject,
+                text=text_message,
+                html=html_message,
+            )
+            emails.append(message)
+        connection = mail.get_connection()
+        connection.send_messages(emails)
+        to_send.update(sent=current_time)
 
 
 class SendEmailAsyncNow(Task):
+    """Sends an email in a separate task.
+
+    This task is spun up during the post-save signal sent when
+    `entity_emailer.models.Email` objects are saved.
+    """
     def run(*args, **kwargs):
         email = kwargs.get('email')
         to_email_addresses = get_email_addresses(email)
         text_message, html_message = render_templates(email)
-        try:
-            from_email = settings.ENTITY_EMAILER_FROM_EMAIL
-        except AttributeError:
-            from_email = settings.DEFAULT_FROM_EMAIL
-        if not html_message:
-            # If there is no html message, we can send a text email.
-            send_mail(
-                subject=email.subject,
-                message=text_message,
-                recipient_list=to_email_addresses,
-                from_email=from_email,
-            )
-        else:
-            # If there is an html message, we must attach it as an
-            # alternative.
-            email = EmailMultiAlternatives(
-                subject=email.subject,
-                body=text_message,
-                to=to_email_addresses,
-                from_email=from_email,
-            )
-            email.attach_alternative(html_message, 'text/html')
-            email.send()
+        from_email = get_from_email_address()
+        message = create_email_message(
+            to_emails=to_email_addresses,
+            from_email=from_email,
+            subject=email.subject,
+            text=text_message,
+            html=html_message,
+        )
+        message.send()
+        email.sent = datetime.utcnow()
+        email.save()
+
+
+def create_email_message(to_emails, from_email, subject, text, html):
+    """Create the appropriate plaintext or html email object.
+
+    Returns:
+
+       email - an instance of either `django.core.mail.EmailMessage` or
+       `django.core.mail.EmailMulitiAlternatives` based on whether or
+       not `html_message` is empty.
+    """
+    if not html:
+        email = mail.EmailMessage(
+            subject=subject,
+            body=text,
+            to=to_emails,
+            from_email=from_email,
+        )
+    else:
+        email = mail.EmailMultiAlternatives(
+            subject=subject,
+            body=text,
+            to=to_emails,
+            from_email=from_email,
+        )
+        email.attach_alternative(html, 'text/html')
+    return email
+
+
+def get_from_email_address():
+    """Get a 'from' address based on the django settings.
+    """
+    return getattr(settings, 'ENTITY_EMAILER_FROM_EMAIL', settings.DEFAULT_FROM_EMAIL)
 
 
 def get_email_addresses(email):
