@@ -88,11 +88,7 @@ def create_email_message(to_emails, from_email, subject, text, html):
 def get_from_email_address():
     """Get a 'from' address based on the django settings.
     """
-    try:
-        from_email = settings.ENTITY_EMAILER_FROM_EMAIL
-    except AttributeError:
-        from_email = settings.DEFAULT_FROM_EMAIL
-    return from_email
+    return getattr(settings, 'ENTITY_EMAILER_FROM_EMAIL', settings.DEFAULT_FROM_EMAIL)
 
 
 def get_email_addresses(email):
