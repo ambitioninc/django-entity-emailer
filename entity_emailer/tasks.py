@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from celery import Task
+from db_mutex import db_mutex
 from django.conf import settings
 from django.core import mail
 from django.template.loader import render_to_string
@@ -14,7 +15,11 @@ class SendUnsentScheduledEmails(Task):
 
     This task should be added to a celery beat.
     """
-    def run(*args, **kwargs):
+    def run(self, *args, **kwargs):
+        with db_mutex('send-unsent-scheduled-emails'):
+            self.run_worker(*args, **kwargs)
+
+    def run_worker(self, *args, **kwargs):
         current_time = datetime.utcnow()
         to_send = Email.objects.filter(scheduled__lte=current_time, sent__isnull=True)
         from_email = get_from_email_address()
@@ -33,29 +38,6 @@ class SendUnsentScheduledEmails(Task):
         connection = mail.get_connection()
         connection.send_messages(emails)
         to_send.update(sent=current_time)
-
-
-class SendEmailAsyncNow(Task):
-    """Sends an email in a separate task.
-
-    This task is spun up during the post-save signal sent when
-    `entity_emailer.models.Email` objects are saved.
-    """
-    def run(*args, **kwargs):
-        email = kwargs.get('email')
-        to_email_addresses = get_email_addresses(email)
-        text_message, html_message = render_templates(email)
-        from_email = get_from_email_address()
-        message = create_email_message(
-            to_emails=to_email_addresses,
-            from_email=from_email,
-            subject=email.subject,
-            text=text_message,
-            html=html_message,
-        )
-        message.send()
-        email.sent = datetime.utcnow()
-        email.save()
 
 
 def create_email_message(to_emails, from_email, subject, text, html):
