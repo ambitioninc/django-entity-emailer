@@ -83,7 +83,7 @@ def get_email_addresses(email):
       A list of strings: email addresses.
     """
     if email.subentity_type is not None:
-        all_entities = email.send_to.get_sub_entities().is_type(email.subentity_type)
+        all_entities = email.send_to.get_sub_entities().is_any_type(email.subentity_type)
     else:
         all_entities = [email.send_to]
     dont_send_to = frozenset(
