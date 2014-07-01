@@ -111,32 +111,44 @@ class GetEmailAddressesTest(TestCase):
         G(EntityRelationship, sub_entity=self.sub_entity_3, super_entity=self.super_entity)
         self.template = G(EmailTemplate, text_template='Hi!')
         self.medium = G(Medium, name='email')
+        self.source = G(Source, name='test_email')
 
     def test_returns_sub_entities_emails(self):
-        G(Subscription, )
-        email = N(Email, send_to= self.super_entity, subentity_type=self.ct, template=self.template, context={})
+        G(Subscription, entity=self.super_entity, subentity_type=self.ct, medium=self.medium, source=self.source)
+        email = N(
+            Email, source=self.source, send_to=self.super_entity,
+            subentity_type=self.ct, template=self.template, context={}
+        )
         addresses = tasks.get_subscribed_email_addresses(email)
         expected_addresses = {u'test_sub1@example.com', u'test_sub2@example.com'}
         self.assertEqual(set(addresses), expected_addresses)
 
     def test_filters_other_entity_types(self):
-        email = N(Email, send_to=self.super_entity, subentity_type=self.ct2, template=self.template, context={})
+        G(Subscription, entity=self.super_entity, subentity_type=self.ct2, medium=self.medium, source=self.source)
+        email = N(
+            Email, source=self.source, send_to=self.super_entity,
+            subentity_type=self.ct2, template=self.template, context={}
+        )
         addresses = tasks.get_subscribed_email_addresses(email)
         expected_addresses = {u'test_sub3@example.com'}
         self.assertEqual(set(addresses), expected_addresses)
 
     def test_returns_own_email(self):
-        email = N(Email, send_to=self.super_entity, subentity_type=None, template=self.template, context={})
+        G(Subscription, entity=self.super_entity, subentity_type=None, medium=self.medium, source=self.source)
+        email = N(
+            Email, source=self.source, send_to=self.super_entity,
+            subentity_type=None, template=self.template, context={}
+        )
         addresses = tasks.get_subscribed_email_addresses(email)
         expected_addresses = {u'test_super@example.com'}
         self.assertEqual(set(addresses), expected_addresses)
 
     def test_unsubscription_works(self):
-        test_email_source = G(Source, name='test_email')
-        G(Unsubscribe, entity=self.sub_entity_1, source=test_email_source, medium=self.medium)
+        G(Subscription, entity=self.super_entity, subentity_type=self.ct, medium=self.medium, source=self.source)
+        G(Unsubscribe, entity=self.sub_entity_1, source=self.source, medium=self.medium)
         email = N(
             Email, send_to=self.super_entity, subentity_type=self.ct,
-            source=test_email_source, template=self.template, context={}
+            source=self.source, template=self.template, context={}
         )
         addresses = tasks.get_subscribed_email_addresses(email)
         expected_addresses = {u'test_sub2@example.com'}
