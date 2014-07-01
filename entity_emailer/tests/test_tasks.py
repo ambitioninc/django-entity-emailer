@@ -154,6 +154,20 @@ class GetEmailAddressesTest(TestCase):
         expected_addresses = {u'test_sub2@example.com'}
         self.assertEqual(set(addresses), expected_addresses)
 
+    def test_email_settings(self):
+        custom_medium_name = 'test_medium'
+        other_medium = G(Medium, name=custom_medium_name)
+        G(Subscription, entity=self.super_entity, subentity_type=self.ct, medium=other_medium, source=self.source)
+        email = N(
+            Email, source=self.source, send_to=self.super_entity,
+            subentity_type=self.ct, template=self.template, context={}
+        )
+        expected_addresses = {u'test_sub1@example.com', u'test_sub2@example.com'}
+        with self.settings(ENTITY_EMAILER_MEDIUM_NAME=custom_medium_name):
+            addresses = tasks.get_subscribed_email_addresses(email)
+        self.assertEqual(set(addresses), expected_addresses)
+            
+
 
 class RenderTemplatesTest(TestCase):
     @patch('__builtin__.open')
