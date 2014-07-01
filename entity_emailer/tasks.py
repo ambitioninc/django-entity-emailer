@@ -6,8 +6,9 @@ from django.conf import settings
 from django.core import mail
 from django.template.loader import render_to_string
 from django.template import Context, Template
+from entity_subscription.models import Medium, Subscription
 
-from entity_emailer.models import Email, Unsubscribed
+from entity_emailer.models import Email
 
 
 class SendUnsentScheduledEmails(Task):
@@ -25,7 +26,7 @@ class SendUnsentScheduledEmails(Task):
         from_email = get_from_email_address()
         emails = []
         for email in to_send:
-            to_email_addresses = get_email_addresses(email)
+            to_email_addresses = get_subscribed_email_addresses(email)
             text_message, html_message = render_templates(email)
             message = create_email_message(
                 to_emails=to_email_addresses,
@@ -73,7 +74,7 @@ def get_from_email_address():
     return getattr(settings, 'ENTITY_EMAILER_FROM_EMAIL', settings.DEFAULT_FROM_EMAIL)
 
 
-def get_email_addresses(email):
+def get_subscribed_email_addresses(email):
     """From an email object determine the appropriate email addresses.
 
     Excludes the addresses of those who unsubscribed from the email's
@@ -82,14 +83,18 @@ def get_email_addresses(email):
     Returns:
       A list of strings: email addresses.
     """
+    email_medium_name = getattr(settings, 'ENTITY_EMAILER_MEDIUM_NAME', 'email')
+    email_medium = Medium.objects.get(name=email_medium_name)
     if email.subentity_type is not None:
         all_entities = email.send_to.get_sub_entities().is_any_type(email.subentity_type)
     else:
         all_entities = [email.send_to]
-    dont_send_to = frozenset(
-        Unsubscribed.objects.filter(unsubscribed_from=email.email_type).values_list('entity', flat=True)
-    )
-    send_to = (e for e in all_entities if e.id not in dont_send_to)
+    send_to = [
+        e for e in all_entities
+        if Subscription.objects.is_subscribed(
+            source=email.source, medium=email_medium, entity=e
+        )
+    ]
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
 

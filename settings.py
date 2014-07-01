@@ -43,6 +43,7 @@ def configure_settings():
                 'django.contrib.admin',
                 'south',
                 'entity',
+                'entity_subscription',
                 'entity_emailer',
                 'entity_emailer.tests',
             ),

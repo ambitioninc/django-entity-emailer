@@ -1,9 +1,9 @@
 from datetime import datetime
-
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
-from entity.models import Entity
+from entity import Entity
+from entity_subscription.models import Source
 from jsonfield import JSONField
 
 
@@ -21,9 +21,12 @@ class Email(models.Model):
     Team or Organization, and setting subentities to True.
 
     Sending an email happens automatically, and consists of rendering
-    the given template with the given context
+    the given template with the given context.
+
+    Emails will not be sent to any individual who has unsubscribed
+    from emails of that source.
     """
-    email_type = models.ForeignKey('EmailType')
+    source = models.ForeignKey(Source)
     send_to = models.ForeignKey(Entity)
     subentity_type = models.ForeignKey(ContentType, null=True, default=None)
     subject = models.CharField(max_length=256)
@@ -72,20 +75,3 @@ class EmailTemplate(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super(EmailTemplate, self).save(*args, **kwargs)
-
-
-class EmailType(models.Model):
-    """A broad category for emails being sent to users.
-
-    Defining categories makes it easier for users to have some control
-    over
-    """
-    name = models.CharField(max_length=64, unique=True)
-    description = models.TextField()
-
-
-class Unsubscribed(models.Model):
-    """Entities (users) who have opted out of recieving types of email.
-    """
-    entity = models.ForeignKey(Entity)
-    unsubscribed_from = models.ForeignKey(EmailType)
