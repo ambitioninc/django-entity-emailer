@@ -166,7 +166,6 @@ class GetEmailAddressesTest(TestCase):
         with self.settings(ENTITY_EMAILER_MEDIUM_NAME=custom_medium_name):
             addresses = tasks.get_subscribed_email_addresses(email)
         self.assertEqual(set(addresses), expected_addresses)
-            
 
 
 class RenderTemplatesTest(TestCase):

@@ -86,15 +86,12 @@ def get_subscribed_email_addresses(email):
     email_medium_name = getattr(settings, 'ENTITY_EMAILER_MEDIUM_NAME', 'email')
     email_medium = Medium.objects.get(name=email_medium_name)
     if email.subentity_type is not None:
-        all_entities = email.send_to.get_sub_entities().is_any_type(email.subentity_type)
+        all_entities = list(email.send_to.get_sub_entities().is_any_type(email.subentity_type))
     else:
         all_entities = [email.send_to]
-    send_to = [
-        e for e in all_entities
-        if Subscription.objects.is_subscribed(
-            source=email.source, medium=email_medium, entity=e
-        )
-    ]
+    send_to = Subscription.objects.filter_not_subscribed(
+        source=email.source, medium=email_medium, entities=all_entities
+    )
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
 
