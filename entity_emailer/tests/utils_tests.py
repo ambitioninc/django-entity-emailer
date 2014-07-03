@@ -1,8 +1,8 @@
 from django.test import TestCase
 from django_dynamic_fixture import G
+from entity_subscription.models import Medium
 
 from entity_emailer.utils import get_medium
-from entity_subscription.models import Medium
 
 
 class GetMediumTest(TestCase):
