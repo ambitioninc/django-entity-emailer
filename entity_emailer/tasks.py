@@ -6,9 +6,10 @@ from django.conf import settings
 from django.core import mail
 from django.template.loader import render_to_string
 from django.template import Context, Template
-from entity_subscription.models import Medium, Subscription
+from entity_subscription.models import Subscription
 
 from entity_emailer.models import Email
+from entity_emailer import get_medium
 
 
 class SendUnsentScheduledEmails(Task):
@@ -83,8 +84,7 @@ def get_subscribed_email_addresses(email):
     Returns:
       A list of strings: email addresses.
     """
-    email_medium_name = getattr(settings, 'ENTITY_EMAILER_MEDIUM_NAME', 'email')
-    email_medium = Medium.objects.get(name=email_medium_name)
+    email_medium = get_medium()
     if email.subentity_type is not None:
         all_entities = list(email.send_to.get_sub_entities().is_any_type(email.subentity_type))
     else:
