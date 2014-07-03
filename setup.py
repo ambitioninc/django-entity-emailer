@@ -18,19 +18,19 @@ def get_version():
 
 
 setup(
-    name='',
+    name='django-entity-emailer',
     version=get_version(),
-    description='',
+    description='Make emailing users easy and entity-based.',
     long_description=open('README.rst').read(),
-    url='',
-    author='',
+    url='https://github.com/ambitioninc/django-entity-emailer',
+    author='Erik Swanson',
     author_email='opensource@ambition.com',
     keywords='',
     packages=find_packages(),
     classifiers=[
         'Programming Language :: Python',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Framework :: Django',
     ],
