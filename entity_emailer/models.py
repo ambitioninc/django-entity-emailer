@@ -30,6 +30,7 @@ class Email(models.Model):
     send_to = models.ForeignKey(Entity)
     subentity_type = models.ForeignKey(ContentType, null=True, default=None)
     subject = models.CharField(max_length=256)
+    from_address = models.CharField(max_length=256, default='')
     template = models.ForeignKey('EmailTemplate')
     context = JSONField()
     uid = models.CharField(max_length=100, unique=True, null=True, default=None)

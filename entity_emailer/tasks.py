@@ -24,14 +24,14 @@ class SendUnsentScheduledEmails(Task):
     def run_worker(self, *args, **kwargs):
         current_time = datetime.utcnow()
         to_send = Email.objects.filter(scheduled__lte=current_time, sent__isnull=True)
-        from_email = get_from_email_address()
+        default_from_email = get_from_email_address()
         emails = []
         for email in to_send:
             to_email_addresses = get_subscribed_email_addresses(email)
             text_message, html_message = render_templates(email)
             message = create_email_message(
                 to_emails=to_email_addresses,
-                from_email=from_email,
+                from_email=email.from_address or default_from_email,
                 subject=email.subject,
                 text=text_message,
                 html=html_message,

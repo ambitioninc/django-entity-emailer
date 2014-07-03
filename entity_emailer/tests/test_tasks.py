@@ -32,6 +32,19 @@ class SendUnsentScheduledEmailsTest(TestCase):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('entity_emailer.tasks.render_to_string')
     @patch('entity_emailer.tasks.get_subscribed_email_addresses')
+    def test_sends_email_with_specified_from_address(self, address_mock, loader_mock):
+        loader_mock.side_effect = ['<p>This is a test html email.</p>',
+                                   'This is a test text email.']
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        template = G(EmailTemplate, text_template='Hi')
+        from_address = 'test@example.com'
+        G(Email, template=template, context={}, from_address=from_address, scheduled=datetime.min)
+        tasks.SendUnsentScheduledEmails().delay()
+        self.assertEqual(mail.outbox[0].from_email, from_address)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.render_to_string')
+    @patch('entity_emailer.tasks.get_subscribed_email_addresses')
     def test_sends_no_future_emails(self, address_mock, loader_mock):
         loader_mock.side_effect = ['<p>This is a test html email.</p>',
                                    'This is a test text email.']
