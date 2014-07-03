@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.management import BaseCommand
 from entity_subscription.models import Medium
 
+
 class Command(BaseCommand):
     def handle(self, *args, **options):
         email_medium_name = getattr(settings, 'ENTITY_EMAILER_MEDIUM_NAME', 'email')
