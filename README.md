@@ -39,21 +39,30 @@ entities must include a value for the key `'email'` in their
 If both of those conditions are true, setup is fairly straightforward:
 
 1. Add `entity_emailer` to `INSTALLED_APPS`.
-2. Either set a value for `settings.ENTITY_EMAILER_FROM_EMAIL`, or be
+1. Either set a value for `settings.ENTITY_EMAILER_FROM_EMAIL`, or be
    sure that the `settings.DEFAULT_FROM_EMAIL` is set to an
    appropriate value.
-3. Be sure that `djang-db-mutex` is installed and `db_mutex` is in
-   `INSTALLED_APPS`. Entity emailer uses db-mutexes to ensure that
-   emails don't get sent multiple times.
-4. Be sure that `django.contrib.contenttypes` is in `INSTALLED_APPS`.
-5. Add the scheduled email task to your `CELERYBEAT_SCHEDULE` (see
+1. Ensure that all the dependencies are installed and listed in `INSTALLED_APPS`
+   - pip: `django-db-mutex`, INSTALLED_APPS: `db_mutex`
+   - pip: `django-entity-subscription`, INSTALLED_APPS: `entity_subscription`
+1. Add the scheduled email task to your `CELERYBEAT_SCHEDULE` (see
    configuring celery section).
-6. Run `python manage..py syncdb`
+1. Run `python manage.py syncdb` and `python manage.py migrate`
+1. Ensure that a email medium is set up by running `python manage.py
+   add_email_medium`.
 
 When sending an email, django-entity-emailer will first check if the
 `ENTITY_EMAILER_FROM_EMAIL` exists. If it does, it will use that value
 in the email's 'from' field, otherwise it will fall back to the value
 set in `DEFAULT_FROM_EMAIL`.
+
+Finally, django-entity-emailer uses
+[django-entity-subscription](https://github.com/ambitioninc/django-entity-subscription)
+for subscription management. This libary makes it easy for developers
+and users to manage what sorts of notifications users
+recieve. However, it does require some configuration. For a simple
+emailer configuration, see the 'Basic entity-subscription
+configuration' section.
 
 ### Getting `'email'` into `'entity_meta'`
 
@@ -111,6 +120,40 @@ Making sure to use a value for `'schedule'` that is appropriate for
 the volume of emails, and server resources.
 
 
+### Basic entity-subscription configuration
+
+In order to ensure that users of your site will not recieve emails
+that they don't want to recieve, the entity-emailer application ties
+in to the
+[entity-subscription](https://github.com/ambitioninc/django-entity-subscription)
+framework. As a developer it is up to you to expose the ability for
+users to subscribe and unsubscribe from emails. Here, we will show the
+basic configuration required to start sending emails.
+
+Running `manage.py add_email_medium` will add the medium that
+entity-emailer relies on to send emails. We must also have a source of
+emails, and a subscription to that combination of email and source.
+
+```python
+from entity_emailer import get_medium
+from entity_subscription.models import Source, Subscription
+from entity import Entity
+from django.contrib.contenttypes.models import ContentType
+
+super_entity=Entity.objects.get_for_obj(my_group_object)
+user_entity_type = ContentTypes.objects.get_for_model(MyUserModel)
+
+email_medium = get_medium()
+admin_source = Source.objects.create(
+    name='admin', display_name='Admin Notifications',
+    description='Important notifications for the site Admin.',
+)
+Subscription.objects.create(
+    source=admin_source, medium=email_medium,
+    entity=super_entity, subentity_type=user_entity_type
+)
+```
+
 Send an Email Immediately
 --------------------------------------------------
 
@@ -119,19 +162,11 @@ database. Django-entity-emailer listens to the post-save signal sent
 for the Email model and spawns a celery task to send the email
 asynchronously.
 
-A prerequisite to sending an email is categorizing it into an
-email-type. Categorizing emails into types makes it easier to allow
-users to unsubscribe from types of emails they don't wish to receive.
-
-``` python
-from entity.models import Entity
-from entity_emailer.models import Email, EmailTemplate, EmailType
-
-marketing_email_type, created = EmailType.objects.get_or_create(
-    name='marketing',
-    description='Emails with new and exciting offers!'
-)
-```
+A prerequisite to sending an email is categorizing it into a
+source. Categorizing emails into sources makes it easier to allow
+users to unsubscribe from types of emails they don't wish to
+receive. We have set up a source above, called `admin_source`, for the
+examples below, we will be using a source called `marketing_source`.
 
 Before we can send an email, we also need to create an `EmailTemplate`
 for the context of our email to fill in. An email template is simply a
@@ -158,7 +193,7 @@ field.
 send_to_entity = Entity.objects.get_for_obj(some_user_with_an_email)
 
 Email.objects.create(
-    email_type=marketing_email_type,
+    source=marketing_source,
     send_to=send_to_entity,
     subject='This is a great offer!',
     template=new_item_template,
@@ -211,7 +246,7 @@ marketing_news_today = Newsletter.objects.get(name='Marketing News Today')
 send_to_entity = Entity.objects.get_for_obj(marketing_news_today)
 
 Email.objects.create(
-    email_type=marketing_email_type,
+    source=marketing_source,
     # our send_to_entity, is a newsletter, a super-entity of
     # NewsletterSubscribers
     send_to=send_to_entity,
@@ -244,7 +279,7 @@ provide a value for the `scheduled` field.
 from datetime import datetime
 
 Email.objects.create(
-    email_type=marketing_email_type,
+    source=marketing_source,
     send_to=send_to_entity,
     subentity_type=ContentType.objects.get_for_model(NewsletterSubscribers)
     subject='This is a great offer!',
@@ -266,15 +301,18 @@ Unsubscribing
 
 Users may want to be able to unsubscribe from certain types of
 emails. This is easy in django-entity-emailer. Emails can be
-unsubscribed from by individual `EmailType`.
+unsubscribed from by individual sources, by using the
+entity-subscription framework.
 
 ```python
-from entity_emailer import EmailType, Unsubscribed
+from entity_emailer import get_medium
+from entity_subscription import Source, Unsubscribe
 
-admin_emails = EmailType.objects.get(name='admin')
-Unsubscribed.objects.create(
+admin_emails = Source.objects.get(name='admin')
+Unsubscribe.objects.create(
     entity=entity_of_user_to_unsub,
-    email_type=admin_emails
+    source=admin_emails
+    medium=get_medium()
 )
 ```
 
