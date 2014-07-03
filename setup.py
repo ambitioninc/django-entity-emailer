@@ -21,7 +21,7 @@ setup(
     name='',
     version=get_version(),
     description='',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
     url='',
     author='',
     author_email='opensource@ambition.com',
