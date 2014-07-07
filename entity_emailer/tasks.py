@@ -6,8 +6,10 @@ from django.conf import settings
 from django.core import mail
 from django.template.loader import render_to_string
 from django.template import Context, Template
+from entity_subscription.models import Subscription
 
-from entity_emailer.models import Email, Unsubscribed
+from entity_emailer.models import Email
+from entity_emailer import get_medium
 
 
 class SendUnsentScheduledEmails(Task):
@@ -22,14 +24,14 @@ class SendUnsentScheduledEmails(Task):
     def run_worker(self, *args, **kwargs):
         current_time = datetime.utcnow()
         to_send = Email.objects.filter(scheduled__lte=current_time, sent__isnull=True)
-        from_email = get_from_email_address()
+        default_from_email = get_from_email_address()
         emails = []
         for email in to_send:
-            to_email_addresses = get_email_addresses(email)
+            to_email_addresses = get_subscribed_email_addresses(email)
             text_message, html_message = render_templates(email)
             message = create_email_message(
                 to_emails=to_email_addresses,
-                from_email=from_email,
+                from_email=email.from_address or default_from_email,
                 subject=email.subject,
                 text=text_message,
                 html=html_message,
@@ -73,7 +75,7 @@ def get_from_email_address():
     return getattr(settings, 'ENTITY_EMAILER_FROM_EMAIL', settings.DEFAULT_FROM_EMAIL)
 
 
-def get_email_addresses(email):
+def get_subscribed_email_addresses(email):
     """From an email object determine the appropriate email addresses.
 
     Excludes the addresses of those who unsubscribed from the email's
@@ -82,14 +84,14 @@ def get_email_addresses(email):
     Returns:
       A list of strings: email addresses.
     """
+    email_medium = get_medium()
     if email.subentity_type is not None:
-        all_entities = email.send_to.get_sub_entities().is_type(email.subentity_type)
+        all_entities = list(email.send_to.get_sub_entities().is_any_type(email.subentity_type))
     else:
         all_entities = [email.send_to]
-    dont_send_to = frozenset(
-        Unsubscribed.objects.filter(unsubscribed_from=email.email_type).values_list('entity', flat=True)
+    send_to = Subscription.objects.filter_not_subscribed(
+        source=email.source, medium=email_medium, entities=all_entities
     )
-    send_to = (e for e in all_entities if e.id not in dont_send_to)
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
 
