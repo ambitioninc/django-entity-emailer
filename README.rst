@@ -86,7 +86,7 @@ inheriting from ``entity.BaseEntityModel``, with a ``get_entity_meta``
 that returns the email along with any other data to be mirrored. A
 simple example could be:
 
-.. code:: Python
+.. code:: python
 
     from django.db import models
     from entity import BaseEntityModel
@@ -96,12 +96,12 @@ simple example could be:
         email = models.CharField(max_length=254)
 
         def get_entity_meta(self):
-           return {'email': self.email, 'username': self.username}
+            return {'email': self.email, 'username': self.username}
 
 
 Also note that it is not necessary for every mirrored entity to
 include an email, only those entities that will actually be sent
-emails need to have emails mirrored in their `entity_meta`s.
+emails need to have emails mirrored in their ``entity_meta``.
 
 For a more complete description of how entity mirroring works, see the
 documentation for django-entity.
@@ -120,7 +120,7 @@ official guide, `Celery Periodic Tasks`.
 In short, it should be enough to add the following to your existing
 celerybeat schedule.
 
-.. code:: Python
+.. code:: python
 
     CELERYBEAT_SCHEDULE = {
         # ...
@@ -152,7 +152,7 @@ Running ``manage.py add_email_medium`` will add the medium that
 entity-emailer relies on to send emails. We must also have a source of
 emails, and a subscription to that combination of email and source.
 
-.. code:: Python
+.. code:: python
 
     from entity_emailer import get_medium
     from entity_subscription.models import Source, Subscription
@@ -197,7 +197,7 @@ storing a simple text template. The different possibilities for
 constructing an ``EmailTemplate`` object are discussed more deeply in
 the "Email Templates" section.
 
-.. code:: Python
+.. code:: python
 
     new_item_template = EmailTemplate.objects.create(
         template_name='simple item email',
@@ -209,7 +209,7 @@ Once an email type and template have been created, sending an email is
 as simple as creating an email field without specifying a ``scheduled``
 field.
 
-.. code:: Python
+.. code:: python
 
     send_to_entity = Entity.objects.get_for_obj(some_user_with_an_email)
 
@@ -256,7 +256,7 @@ specified by ``subentity_type`` must have an 'email' set in their
 
 A complete example is below:
 
-.. code:: Python
+.. code:: python
 
     from entity_emailer.models import Email
 
@@ -298,7 +298,7 @@ configured, as described in the "Setup and Configuration" section, the
 only difference from the process described above is that you must
 provide a value for the ``scheduled`` field.
 
-.. code:: Python
+.. code:: python
 
     from datetime import datetime
 
@@ -327,7 +327,7 @@ emails. This is easy in django-entity-emailer. Emails can be
 unsubscribed from by individual sources, by using the
 entity-subscription framework.
 
-.. code:: Python
+.. code:: python
 
     from entity_emailer import get_medium
     from entity_subscription import Source, Unsubscribe
