@@ -76,7 +76,7 @@ see the 'Basic entity-subscription configuration' section.
 
 
 Getting ``'email'`` into ``'entity_meta'``
-``````````````````````````````````````
+``````````````````````````````````````````
 
 The requirement that entities be mirrored with an ``'email'`` field in
 their ``entity_meta`` is not difficult.
@@ -174,7 +174,7 @@ emails, and a subscription to that combination of email and source.
 
 
 Send an Email Immediately
---------------------------------------------------
+-------------------------
 
 Sending an email immediately is as simple as saving a record to the
 database. Django-entity-emailer listens to the post-save signal sent
