@@ -47,7 +47,6 @@ class EntityEmailerAdminSetupTest(TestCase):
         self.assertEqual(source.name, custom_source_name)
 
     def test_custom_template(self):
-        custom_source_name = 'test-email'
         custom_template_name = 'test-html'
         with self.settings(ENTITY_EMAILER_ADMIN_TEMPLATE_NAME=custom_template_name):
             call_command('entity_emailer_admin_setup')
