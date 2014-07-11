@@ -35,7 +35,7 @@ class SubentityContentTypeQsTest(TestCase):
 class EmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
-        self.entity = G(Entity, entity_meta={'name':'entity_name'})
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
         self.email = Email(
             sent=datetime(2014, 1, 1, 12, 34),
             send_to=self.entity,
@@ -56,6 +56,7 @@ class EmailAdminTest(TestCase):
         to = email_admin.to(self.email)
         self.assertEqual(to, 'entity_name')
 
+
 class CreateEmailFormTest(TestCase):
     def setUp(self):
         test_entity = G(Entity)
@@ -75,4 +76,5 @@ class CreateEmailFormTest(TestCase):
         self.assertTrue(Email.objects.exists())
 
     def test_save_m2m_exists(self):
-        pass
+        form = admin.CreateEmailForm(self.email_form_data)
+        form.save_m2m()
