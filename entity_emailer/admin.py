@@ -6,7 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from entity import Entity, EntityRelationship
 
 from entity_emailer.models import Email, EmailTemplate
-from entity_emailer.utils import get_admin_source
+from entity_emailer.utils import get_admin_source, get_admin_template
 
 
 def get_subentity_content_type_qs():
@@ -44,7 +44,7 @@ class CreateEmailForm(forms.ModelForm):
             subentity_type=self.cleaned_data['subentity_type'],
             subject=self.cleaned_data['subject'],
             from_address=self.cleaned_data['from_email'],
-            template=EmailTemplate.objects.get(template_name='test_html_safe'),
+            template=get_admin_template(),
             context=self.cleaned_data['body'],
             scheduled=scheduled
         )
