@@ -34,22 +34,26 @@ class SubentityContentTypeQsTest(TestCase):
 class EmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
-        self.entity = G(entity, entity_meta={'name':})
+        self.entity = G(Entity, entity_meta={'name':'entity_name'})
         self.email = Email(
-            sent=datetime(2014, 1, 1, 12, 34)
-            send_to
+            sent=datetime(2014, 1, 1, 12, 34),
+            send_to=self.entity,
         )
 
     def test_has_been_sent(self):
         email_admin = admin.EmailAdmin(Email, self.site)
         sent = email_admin.has_been_sent(self.email)
-        self.assertFalse(not_sent)
+        self.assertTrue(sent)
 
     def test_has_not_been_sent(self):
         email_admin = admin.EmailAdmin(Email, self.site)
         not_sent = email_admin.has_been_sent(Email())
-        self.assertTrue(sent)
+        self.assertFalse(not_sent)
 
+    def test_to(self):
+        email_admin = admin.EmailAdmin(Email, self.site)
+        to = email_admin.to(self.email)
+        self.assertEqual(to, 'entity_name')
 
 class CreateEmailFormTest(TestCase):
     def test_saves(self):
