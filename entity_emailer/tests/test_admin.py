@@ -5,9 +5,10 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from django_dynamic_fixture import G
 from entity import Entity, EntityRelationship
+from entity_subscription.models import Source
 
 from entity_emailer import admin
-from entity_emailer.models import Email
+from entity_emailer.models import Email, EmailTemplate
 
 
 class SubentityContentTypeQsTest(TestCase):
@@ -56,9 +57,22 @@ class EmailAdminTest(TestCase):
         self.assertEqual(to, 'entity_name')
 
 class CreateEmailFormTest(TestCase):
-    def test_saves(self):
-        # form = admin.CreateEmailForm()
-        pass
+    def setUp(self):
+        test_entity = G(Entity)
+        G(Source, name='admin')
+        G(EmailTemplate, template_name='html_safe', html_template='{{ html|safe }}')
+        self.email_form_data = {
+            'subject': 'A Test Email Subject',
+            'from_email': 'test@example.com',
+            'to_entity': test_entity.id,
+            'body': '<html><body><p>This is the email body</p></body></html>',
+        }
+
+    def test_save_creates_email(self):
+        form = admin.CreateEmailForm(self.email_form_data)
+        form.is_valid()
+        form.save()
+        self.assertTrue(Email.objects.exists())
 
     def test_save_m2m_exists(self):
         pass
