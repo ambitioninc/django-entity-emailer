@@ -64,10 +64,7 @@ class EmailAdmin(admin.ModelAdmin):
 
     def to(self, obj):
         send_to_entity = obj.send_to
-        try:
-            return send_to_entity.entity_meta.get('name', unicode(send_to_entity))
-        except AttributeError:
-            return 'Entity Object'
+        return unicode(send_to_entity)
 
 
 admin.site.register(Email, EmailAdmin)
