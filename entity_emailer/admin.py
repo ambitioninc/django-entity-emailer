@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from entity import Entity, EntityRelationship
 
-from entity_emailer.models import Email, EmailTemplate
+from entity_emailer.models import Email
 from entity_emailer.utils import get_admin_source, get_admin_template
 
 
