@@ -1,10 +1,13 @@
 from django.conf import settings
 from entity_subscription.models import Medium, Source
 
+from entity_emailer.models import EmailTemplate
+
 
 constants = {
     'default_medium_name': 'email',
-    'default_admin_source_name': 'admin'
+    'default_admin_source_name': 'admin',
+    'default_admin_template_name': 'html_safe'
 }
 
 
@@ -26,3 +29,13 @@ def get_admin_source():
     )
     admin_source = Source.objects.get(name=admin_source_name)
     return admin_source
+
+
+def get_admin_template():
+    """Get the EmailTemplate object for emails sent from the admin site.
+    """
+    admin_template_name = getattr(
+        settings, 'ENTITY_EMAILER_ADMIN_TEMPLATE_NAME', constants['default_admin_template_name']
+    )
+    admin_template = EmailTemplate.objects.get(template_name=admin_template_name)
+    return admin_template
