@@ -4,9 +4,9 @@ from django import forms
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from entity import Entity, EntityRelationship
-from entity_subscription.models import Source
 
 from entity_emailer.models import Email, EmailTemplate
+from entity_emailer.utils import get_admin_source
 
 
 def get_subentity_content_type_qs():
@@ -39,7 +39,7 @@ class CreateEmailForm(forms.ModelForm):
         self.clean()
         scheduled = self.cleaned_data['scheduled'] or (datetime.utcnow() + timedelta(minutes=5))
         created_email = Email(
-            source=Source.objects.get(name='admin'),
+            source=get_admin_source(),
             send_to=self.cleaned_data['to_entity'],
             subentity_type=self.cleaned_data['subentity_type'],
             subject=self.cleaned_data['subject'],
