@@ -18,8 +18,8 @@ def get_subentity_content_type_qs():
     return ContentType.objects.filter(
         pk__in=EntityRelationship.objects.
         select_related('sub_entity').
-        distinct('sub_entity__entity_type').
-        values('sub_entity__entity_type')
+        values('sub_entity__entity_type').
+        distinct()
     )
 
 
