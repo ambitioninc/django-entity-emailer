@@ -45,7 +45,7 @@ class CreateEmailForm(forms.ModelForm):
             subject=self.cleaned_data['subject'],
             from_address=self.cleaned_data['from_email'],
             template=get_admin_template(),
-            context=self.cleaned_data['body'],
+            context={'html': self.cleaned_data['body']},
             scheduled=scheduled
         )
         created_email.save()
