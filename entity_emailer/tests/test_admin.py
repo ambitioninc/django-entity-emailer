@@ -32,6 +32,21 @@ class SubentityContentTypeQsTest(TestCase):
         self.assertIn(self.sub_entity_type_2, list(qs))
 
 
+class GetAllSuperEntitiesQsTest(TestCase):
+    def setUp(self):
+        self.super_entity_1 = G(Entity)
+        self.sub_entity_1 = G(Entity)
+        G(EntityRelationship, sub_entity=self.sub_entity_1, super_entity=self.super_entity_1)
+
+    def test_filters_out_sub_entities(self):
+        qs = admin.get_all_super_entities_qs()
+        self.assertNotIn(self.sub_entity_1, list(qs))
+
+    def test_includes_super_entities(self):
+        qs = admin.get_all_super_entities_qs()
+        self.assertIn(self.super_entity_1, list(qs))
+
+
 class EmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()

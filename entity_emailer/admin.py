@@ -23,10 +23,19 @@ def get_subentity_content_type_qs():
     )
 
 
+def get_all_super_entities_qs():
+    """Return a queryset of entities that are superentities.
+
+    Sorted by the number of entities of that type.
+    """
+    super_entities = EntityRelationship.objects.values_list('super_entity', flat=True).distinct()
+    return Entity.objects.filter(pk__in=super_entities).order_by('entity_type')
+
+
 class CreateEmailForm(forms.ModelForm):
     subject = forms.CharField(max_length=128)
     from_email = forms.EmailField()
-    to_entity = forms.ModelChoiceField(queryset=Entity.objects.all())
+    to_entity = forms.ModelChoiceField(queryset=get_all_super_entities_qs())
     subentity_type = forms.ModelChoiceField(queryset=get_subentity_content_type_qs(), required=False)
     body = forms.CharField(widget=forms.Textarea)
     scheduled = forms.DateTimeField(required=False)
