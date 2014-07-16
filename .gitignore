@@ -19,5 +19,8 @@ htmlcov/
 # Virtualenv
 env/
 
+# Test DB
+entity_emailer_db
+
 # OSX
 .DS_Store
