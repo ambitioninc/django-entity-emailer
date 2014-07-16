@@ -75,6 +75,8 @@ class EmailAdminTest(TestCase):
 class CreateEmailFormTest(TestCase):
     def setUp(self):
         test_entity = G(Entity)
+        test_entity_sub = G(Entity)
+        G(EntityRelationship, sub_entity=test_entity_sub, super_entity=test_entity)
         G(Source, name='admin')
         G(EmailTemplate, template_name='html_safe', html_template='{{ html|safe }}')
         self.email_form_data = {

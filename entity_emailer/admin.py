@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from django import forms
+from django.forms.extras.widgets import SelectDateWidget
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from entity import Entity, EntityRelationship
@@ -33,20 +34,26 @@ def get_all_super_entities_qs():
 
 
 class CreateEmailForm(forms.ModelForm):
-    subject = forms.CharField(max_length=128)
-    from_email = forms.EmailField()
+    subject = forms.CharField(max_length=128, widget=forms.TextInput(attrs={'size': '80'}))
+    from_email = forms.EmailField(widget=forms.TextInput(attrs={'size': '80'}))
     to_entity = forms.ModelChoiceField(queryset=get_all_super_entities_qs())
     subentity_type = forms.ModelChoiceField(queryset=get_subentity_content_type_qs(), required=False)
-    body = forms.CharField(widget=forms.Textarea)
-    scheduled = forms.DateTimeField(required=False)
+    body = forms.CharField(widget=forms.Textarea(attrs={'rows': '10', 'cols': '60'}))
+    scheduled_date = forms.DateField(widget=SelectDateWidget(), required=False)
+    scheduled_time = forms.TimeField(label="Scheduled time (UTC 24 hr) E.g. 18:25", required=False)
 
     class Meta:
         model = Email
-        fields = ['subject', 'from_email', 'to_entity', 'subentity_type', 'body', 'scheduled']
+        fields = ['subject', 'from_email', 'to_entity', 'subentity_type', 'body', 'scheduled_date']
 
     def save(self, *args, **kwargs):
         self.clean()
-        scheduled = self.cleaned_data['scheduled'] or (datetime.utcnow() + timedelta(minutes=5))
+        scheduled_date = self.cleaned_data['scheduled_date'] or datetime.utcnow().date()
+        scheduled_time = self.cleaned_data['scheduled_time'] or datetime.utcnow().time()
+        scheduled_datetime = datetime.combine(scheduled_date, scheduled_time)
+        print self.cleaned_data
+        if not (self.cleaned_data['scheduled_date'] and self.cleaned_data['scheduled_time']):
+            scheduled_datetime += timedelta(minutes=5)
         created_email = Email(
             source=get_admin_source(),
             send_to=self.cleaned_data['to_entity'],
@@ -55,7 +62,7 @@ class CreateEmailForm(forms.ModelForm):
             from_address=self.cleaned_data['from_email'],
             template=get_admin_template(),
             context={'html': self.cleaned_data['body']},
-            scheduled=scheduled
+            scheduled=scheduled_datetime
         )
         created_email.save()
         return created_email
