@@ -47,6 +47,25 @@ class GetAllSuperEntitiesQsTest(TestCase):
         self.assertIn(self.super_entity_1, list(qs))
 
 
+# class GetAllEmailableEntitiesTest(TestCase):
+#     def setUp(self):
+#         self.email_entity = G(Entity, entity_meta={'email': 'test@example.com'})
+#         self.no_email_entity = G(Entity, entity_meta={'name': 'Mr. T'})
+#         self.no_meta_entity = G(Entity)
+
+#     def test_filters_out_no_email(self):
+#         qs = admin.get_all_emailable_entities_qs()
+#         self.assertNotIn(self.no_email_entity, list(qs))
+
+#     def test_filters_out_no_email(self):
+#         qs = admin.get_all_emailable_entities_qs()
+#         self.assertNotIn(self.no_meta_entity, list(qs))
+
+#     def test_includes_email_entities(self):
+#         qs = admin.get_all_emailable_entities_qs()
+#         self.assertIn(self.email_entity, list(qs))
+
+
 class EmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()

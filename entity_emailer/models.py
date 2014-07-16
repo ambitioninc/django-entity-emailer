@@ -76,3 +76,17 @@ class EmailTemplate(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super(EmailTemplate, self).save(*args, **kwargs)
+
+
+class IndividualEmailManager(models.Manager):
+    def get_queryset(self):
+        return super(IndividualEmailManager, self).get_queryset().filter(subentity_type__isnull=True)
+
+
+class IndividualEmail(Email):
+    """A proxy model of Email to support a different admin Interface.
+    """
+    class Meta:
+        proxy = True
+
+    objects = IndividualEmailManager()
