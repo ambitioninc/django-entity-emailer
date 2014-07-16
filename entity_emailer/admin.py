@@ -154,5 +154,17 @@ class IndividualEmailAdmin(admin.ModelAdmin):
         return unicode(send_to_entity)
 
 
+class EmailAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'to', 'subentity_type', 'scheduled', 'has_been_sent')
+
+    def has_been_sent(self, obj):
+        return (obj.sent is not None)
+
+    def to(self, obj):
+        send_to_entity = obj.send_to
+        return unicode(send_to_entity)
+
+
 admin.site.register(GroupEmail, GroupEmailAdmin)
 admin.site.register(IndividualEmail, IndividualEmailAdmin)
+admin.site.register(Email, EmailAdmin)
