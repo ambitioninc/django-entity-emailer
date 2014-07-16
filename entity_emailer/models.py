@@ -90,3 +90,17 @@ class IndividualEmail(Email):
         proxy = True
 
     objects = IndividualEmailManager()
+
+
+class GroupEmailManager(models.Manager):
+    def get_queryset(self):
+        return super(GroupEmailManager, self).get_queryset().filter(subentity_type__isnull=False)
+
+
+class GroupEmail(Email):
+    """A proxy model of Email to support a different admin Interface.
+    """
+    class Meta:
+        proxy = True
+
+    objects = GroupEmailManager()

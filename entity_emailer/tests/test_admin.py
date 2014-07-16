@@ -47,26 +47,26 @@ class GetAllSuperEntitiesQsTest(TestCase):
         self.assertIn(self.super_entity_1, list(qs))
 
 
-# class GetAllEmailableEntitiesTest(TestCase):
-#     def setUp(self):
-#         self.email_entity = G(Entity, entity_meta={'email': 'test@example.com'})
-#         self.no_email_entity = G(Entity, entity_meta={'name': 'Mr. T'})
-#         self.no_meta_entity = G(Entity)
+class GetAllEmailableEntitiesTest(TestCase):
+    def setUp(self):
+        self.email_entity = G(Entity, entity_meta={'email': 'test@example.com'})
+        self.no_email_entity = G(Entity, entity_meta={'name': 'Mr. T'})
+        self.no_meta_entity = G(Entity)
 
-#     def test_filters_out_no_email(self):
-#         qs = admin.get_all_emailable_entities_qs()
-#         self.assertNotIn(self.no_email_entity, list(qs))
+    def test_filters_out_no_email(self):
+        qs = admin.get_all_emailable_entities_qs()
+        self.assertNotIn(self.no_email_entity, list(qs))
 
-#     def test_filters_out_no_email(self):
-#         qs = admin.get_all_emailable_entities_qs()
-#         self.assertNotIn(self.no_meta_entity, list(qs))
+    def test_filters_out_no_email(self):
+        qs = admin.get_all_emailable_entities_qs()
+        self.assertNotIn(self.no_meta_entity, list(qs))
 
-#     def test_includes_email_entities(self):
-#         qs = admin.get_all_emailable_entities_qs()
-#         self.assertIn(self.email_entity, list(qs))
+    def test_includes_email_entities(self):
+        qs = admin.get_all_emailable_entities_qs()
+        self.assertIn(self.email_entity, list(qs))
 
 
-class EmailAdminTest(TestCase):
+class GroupEmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.entity = G(Entity, entity_meta={'name': 'entity_name'})
@@ -76,22 +76,22 @@ class EmailAdminTest(TestCase):
         )
 
     def test_has_been_sent(self):
-        email_admin = admin.EmailAdmin(Email, self.site)
+        email_admin = admin.GroupEmailAdmin(Email, self.site)
         sent = email_admin.has_been_sent(self.email)
         self.assertTrue(sent)
 
     def test_has_not_been_sent(self):
-        email_admin = admin.EmailAdmin(Email, self.site)
+        email_admin = admin.GroupEmailAdmin(Email, self.site)
         not_sent = email_admin.has_been_sent(Email())
         self.assertFalse(not_sent)
 
     def test_to(self):
-        email_admin = admin.EmailAdmin(Email, self.site)
+        email_admin = admin.GroupEmailAdmin(Email, self.site)
         to = email_admin.to(self.email)
         self.assertEqual(to, 'entity_name')
 
 
-class CreateEmailFormTest(TestCase):
+class CreateGroupEmailFormTest(TestCase):
     def setUp(self):
         test_entity = G(Entity)
         test_entity_sub = G(Entity)
@@ -106,11 +106,11 @@ class CreateEmailFormTest(TestCase):
         }
 
     def test_save_creates_email(self):
-        form = admin.CreateEmailForm(self.email_form_data)
+        form = admin.CreateGroupEmailForm(self.email_form_data)
         form.is_valid()
         form.save()
         self.assertTrue(Email.objects.exists())
 
     def test_save_m2m_exists(self):
-        form = admin.CreateEmailForm(self.email_form_data)
+        form = admin.CreateGroupEmailForm(self.email_form_data)
         form.save_m2m()

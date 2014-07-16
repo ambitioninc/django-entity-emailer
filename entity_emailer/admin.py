@@ -7,7 +7,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from entity import Entity, EntityRelationship
 
-from entity_emailer.models import Email, IndividualEmail
+from entity_emailer.models import Email, GroupEmail, IndividualEmail
 from entity_emailer.utils import get_admin_source, get_admin_template
 
 
@@ -42,7 +42,7 @@ def get_all_emailable_entities_qs():
     return Entity.objects.filter(pk__in=ids)
 
 
-class CreateEmailForm(forms.ModelForm):
+class CreateGroupEmailForm(forms.ModelForm):
     subject = forms.CharField(max_length=128, widget=forms.TextInput(attrs={'size': '80'}))
     from_email = forms.EmailField(widget=forms.TextInput(attrs={'size': '80'}))
     to_entity = forms.ModelChoiceField(queryset=get_all_super_entities_qs())
@@ -52,7 +52,7 @@ class CreateEmailForm(forms.ModelForm):
     scheduled_time = forms.TimeField(label="Scheduled time (UTC 24 hr) E.g. 18:25", required=False)
 
     class Meta:
-        model = Email
+        model = GroupEmail
         fields = ['subject', 'from_email', 'to_entity', 'subentity_type', 'body', 'scheduled_date']
 
     def save(self, *args, **kwargs):
@@ -122,9 +122,13 @@ class CreateIndividualEmailForm(forms.ModelForm):
         pass
 
 
-class EmailAdmin(admin.ModelAdmin):
+class GroupEmailAdmin(admin.ModelAdmin):
     list_display = ('subject', 'to', 'subentity_type', 'scheduled', 'has_been_sent')
-    form = CreateEmailForm
+    form = CreateGroupEmailForm
+
+    def get_queryset(self, request):
+        qs = super(GroupEmailAdmin, self).get_queryset(request)
+        return qs.filter(template=get_admin_template())
 
     def has_been_sent(self, obj):
         return (obj.sent is not None)
@@ -138,6 +142,10 @@ class IndividualEmailAdmin(admin.ModelAdmin):
     list_display = ('subject', 'to', 'scheduled', 'has_been_sent')
     form = CreateIndividualEmailForm
 
+    def get_queryset(self, request):
+        qs = super(IndividualEmailAdmin, self).get_queryset(request)
+        return qs.filter(template=get_admin_template())
+
     def has_been_sent(self, obj):
         return (obj.sent is not None)
 
@@ -146,5 +154,5 @@ class IndividualEmailAdmin(admin.ModelAdmin):
         return unicode(send_to_entity)
 
 
-admin.site.register(Email, EmailAdmin)
+admin.site.register(GroupEmail, GroupEmailAdmin)
 admin.site.register(IndividualEmail, IndividualEmailAdmin)
