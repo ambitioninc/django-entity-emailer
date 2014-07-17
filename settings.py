@@ -26,7 +26,7 @@ def configure_settings():
         elif test_db == 'sqlite':
             db_config = {
                 'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': 'entity_emailer',
+                'NAME': 'entity_emailer_db',
             }
         else:
             raise RuntimeError('Unsupported test DB {0}'.format(test_db))
