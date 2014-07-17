@@ -7,6 +7,10 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ("entity", "0002_auto__del_field_entityrelationship_is_active"),
+    )
+
     def forwards(self, orm):
         # Adding model 'Email'
         db.create_table(u'entity_emailer_email', (
