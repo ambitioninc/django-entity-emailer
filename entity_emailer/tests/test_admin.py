@@ -86,6 +86,18 @@ class CreateGroupEmailFormTest(TestCase):
         form.save()
         self.assertTrue(Email.objects.exists())
 
+    def test_save_with_scheduled_date_time(self):
+        self.email_form_data.update({
+            'scheduled_date_year': '2014',
+            'scheduled_date_month': '8',
+            'scheduled_date_day': '15',
+            'scheduled_time': '13:31',
+        })
+        form = admin.CreateGroupEmailForm(self.email_form_data)
+        form.is_valid()
+        form.save()
+        self.assertTrue(Email.objects.exists())
+
     def test_save_m2m_exists(self):
         form = admin.CreateGroupEmailForm(self.email_form_data)
         form.save_m2m()
@@ -105,6 +117,19 @@ class CreateIndividualEmailFormTest(TestCase):
         }
 
     def test_save_creates_email(self):
+        form = admin.CreateIndividualEmailForm(self.email_form_data)
+        form.fields['to_entities'].queryset = admin.get_all_emailable_entities_qs()
+        form.is_valid()
+        form.save()
+        self.assertTrue(Email.objects.exists())
+
+    def test_save_with_scheduled_date_time(self):
+        self.email_form_data.update({
+            'scheduled_date_year': '2014',
+            'scheduled_date_month': '8',
+            'scheduled_date_day': '15',
+            'scheduled_time': '13:31',
+        })
         form = admin.CreateIndividualEmailForm(self.email_form_data)
         form.fields['to_entities'].queryset = admin.get_all_emailable_entities_qs()
         form.is_valid()
