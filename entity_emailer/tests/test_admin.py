@@ -57,38 +57,13 @@ class GetAllEmailableEntitiesTest(TestCase):
         qs = admin.get_all_emailable_entities_qs()
         self.assertNotIn(self.no_email_entity, list(qs))
 
-    def test_filters_out_no_email(self):
+    def test_filters_out_no_meta(self):
         qs = admin.get_all_emailable_entities_qs()
         self.assertNotIn(self.no_meta_entity, list(qs))
 
     def test_includes_email_entities(self):
         qs = admin.get_all_emailable_entities_qs()
         self.assertIn(self.email_entity, list(qs))
-
-
-class GroupEmailAdminTest(TestCase):
-    def setUp(self):
-        self.site = AdminSite()
-        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
-        self.email = Email(
-            sent=datetime(2014, 1, 1, 12, 34),
-            send_to=self.entity,
-        )
-
-    def test_has_been_sent(self):
-        email_admin = admin.GroupEmailAdmin(Email, self.site)
-        sent = email_admin.has_been_sent(self.email)
-        self.assertTrue(sent)
-
-    def test_has_not_been_sent(self):
-        email_admin = admin.GroupEmailAdmin(Email, self.site)
-        not_sent = email_admin.has_been_sent(Email())
-        self.assertFalse(not_sent)
-
-    def test_to(self):
-        email_admin = admin.GroupEmailAdmin(Email, self.site)
-        to = email_admin.to(self.email)
-        self.assertEqual(to, 'entity_name')
 
 
 class CreateGroupEmailFormTest(TestCase):
@@ -114,3 +89,37 @@ class CreateGroupEmailFormTest(TestCase):
     def test_save_m2m_exists(self):
         form = admin.CreateGroupEmailForm(self.email_form_data)
         form.save_m2m()
+
+
+class GroupEmailAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
+        self.email = Email(
+            sent=datetime(2014, 1, 1, 12, 34),
+            send_to=self.entity,
+        )
+
+    def test_get_queryset_filters_non_admin(self):
+        admin_template = G(EmailTemplate, template_name='html_safe', text_template="...")
+        other_template = G(EmailTemplate, template_name='other', text_template="...")
+        G(Email, template=admin_template, context={})
+        G(Email, template=other_template, context={})
+        email_admin = admin.GroupEmailAdmin(Email, self.site)
+        qs = email_admin.get_queryset(None)
+        self.assertEqual(qs.count(), 1)
+
+    def test_has_been_sent(self):
+        email_admin = admin.GroupEmailAdmin(Email, self.site)
+        sent = email_admin.has_been_sent(self.email)
+        self.assertTrue(sent)
+
+    def test_has_not_been_sent(self):
+        email_admin = admin.GroupEmailAdmin(Email, self.site)
+        not_sent = email_admin.has_been_sent(Email())
+        self.assertFalse(not_sent)
+
+    def test_to(self):
+        email_admin = admin.GroupEmailAdmin(Email, self.site)
+        to = email_admin.to(self.email)
+        self.assertEqual(to, 'entity_name')
