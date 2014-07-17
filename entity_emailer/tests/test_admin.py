@@ -132,7 +132,6 @@ class GroupEmailAdminTest(TestCase):
         G(Email, template=admin_template, context={}, subentity_type=self.ct)
         G(Email, template=other_template, context={}, subentity_type=self.ct)
         email_admin = admin.GroupEmailAdmin(GroupEmail, self.site)
-        print GroupEmail.objects.all()
         qs = email_admin.get_queryset(None)
         self.assertEqual(qs.count(), 1)
 
@@ -182,5 +181,25 @@ class IndividualEmailAdminTest(TestCase):
 
     def test_to(self):
         email_admin = admin.IndividualEmailAdmin(IndividualEmail, self.site)
+        to = email_admin.to(self.email)
+        self.assertEqual(to, 'entity_name')
+
+
+class EmailAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
+        self.email = Email(
+            sent=datetime(2014, 1, 1, 12, 34),
+            send_to=self.entity,
+        )
+
+    def test_has_not_been_sent(self):
+        email_admin = admin.EmailAdmin(Email, self.site)
+        not_sent = email_admin.has_been_sent(Email())
+        self.assertFalse(not_sent)
+
+    def test_to(self):
+        email_admin = admin.EmailAdmin(Email, self.site)
         to = email_admin.to(self.email)
         self.assertEqual(to, 'entity_name')
