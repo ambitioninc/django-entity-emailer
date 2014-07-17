@@ -91,6 +91,31 @@ class CreateGroupEmailFormTest(TestCase):
         form.save_m2m()
 
 
+class CreateIndividualEmailFormTest(TestCase):
+    def setUp(self):
+        test_entity_sub_1 = G(Entity, entity_meta={'email': 'one@example.com'})
+        test_entity_sub_2 = G(Entity, entity_meta={'email': 'two@example.com'})
+        G(Source, name='admin')
+        G(EmailTemplate, template_name='html_safe', html_template='{{ html|safe }}')
+        self.email_form_data = {
+            'subject': 'A Test Email Subject',
+            'from_email': 'test@example.com',
+            'to_entities': [test_entity_sub_1.id, test_entity_sub_2.id],
+            'body': '<html><body><p>This is the email body</p></body></html>',
+        }
+
+    def test_save_creates_email(self):
+        form = admin.CreateIndividualEmailForm(self.email_form_data)
+        form.fields['to_entities'].queryset = admin.get_all_emailable_entities_qs()
+        form.is_valid()
+        form.save()
+        self.assertTrue(Email.objects.exists())
+
+    def test_save_m2m_exists(self):
+        form = admin.CreateIndividualEmailForm(self.email_form_data)
+        form.save_m2m()
+
+
 class GroupEmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
@@ -121,5 +146,39 @@ class GroupEmailAdminTest(TestCase):
 
     def test_to(self):
         email_admin = admin.GroupEmailAdmin(Email, self.site)
+        to = email_admin.to(self.email)
+        self.assertEqual(to, 'entity_name')
+
+
+class IndividualEmailAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
+        self.email = Email(
+            sent=datetime(2014, 1, 1, 12, 34),
+            send_to=self.entity,
+        )
+
+    def test_get_queryset_filters_non_admin(self):
+        admin_template = G(EmailTemplate, template_name='html_safe', text_template="...")
+        other_template = G(EmailTemplate, template_name='other', text_template="...")
+        G(Email, template=admin_template, context={})
+        G(Email, template=other_template, context={})
+        email_admin = admin.IndividualEmailAdmin(Email, self.site)
+        qs = email_admin.get_queryset(None)
+        self.assertEqual(qs.count(), 1)
+
+    def test_has_been_sent(self):
+        email_admin = admin.IndividualEmailAdmin(Email, self.site)
+        sent = email_admin.has_been_sent(self.email)
+        self.assertTrue(sent)
+
+    def test_has_not_been_sent(self):
+        email_admin = admin.IndividualEmailAdmin(Email, self.site)
+        not_sent = email_admin.has_been_sent(Email())
+        self.assertFalse(not_sent)
+
+    def test_to(self):
+        email_admin = admin.IndividualEmailAdmin(Email, self.site)
         to = email_admin.to(self.email)
         self.assertEqual(to, 'entity_name')
