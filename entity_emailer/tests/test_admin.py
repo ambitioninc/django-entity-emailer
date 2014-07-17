@@ -8,7 +8,7 @@ from entity import Entity, EntityRelationship
 from entity_subscription.models import Source
 
 from entity_emailer import admin
-from entity_emailer.models import Email, EmailTemplate
+from entity_emailer.models import Email, EmailTemplate, GroupEmail, IndividualEmail
 
 
 class SubentityContentTypeQsTest(TestCase):
@@ -118,6 +118,7 @@ class CreateIndividualEmailFormTest(TestCase):
 
 class GroupEmailAdminTest(TestCase):
     def setUp(self):
+        self.ct = G(ContentType)
         self.site = AdminSite()
         self.entity = G(Entity, entity_meta={'name': 'entity_name'})
         self.email = Email(
@@ -128,24 +129,25 @@ class GroupEmailAdminTest(TestCase):
     def test_get_queryset_filters_non_admin(self):
         admin_template = G(EmailTemplate, template_name='html_safe', text_template="...")
         other_template = G(EmailTemplate, template_name='other', text_template="...")
-        G(Email, template=admin_template, context={})
-        G(Email, template=other_template, context={})
-        email_admin = admin.GroupEmailAdmin(Email, self.site)
+        G(Email, template=admin_template, context={}, subentity_type=self.ct)
+        G(Email, template=other_template, context={}, subentity_type=self.ct)
+        email_admin = admin.GroupEmailAdmin(GroupEmail, self.site)
+        print GroupEmail.objects.all()
         qs = email_admin.get_queryset(None)
         self.assertEqual(qs.count(), 1)
 
     def test_has_been_sent(self):
-        email_admin = admin.GroupEmailAdmin(Email, self.site)
+        email_admin = admin.GroupEmailAdmin(GroupEmail, self.site)
         sent = email_admin.has_been_sent(self.email)
         self.assertTrue(sent)
 
     def test_has_not_been_sent(self):
-        email_admin = admin.GroupEmailAdmin(Email, self.site)
+        email_admin = admin.GroupEmailAdmin(GroupEmail, self.site)
         not_sent = email_admin.has_been_sent(Email())
         self.assertFalse(not_sent)
 
     def test_to(self):
-        email_admin = admin.GroupEmailAdmin(Email, self.site)
+        email_admin = admin.GroupEmailAdmin(GroupEmail, self.site)
         to = email_admin.to(self.email)
         self.assertEqual(to, 'entity_name')
 
@@ -169,16 +171,16 @@ class IndividualEmailAdminTest(TestCase):
         self.assertEqual(qs.count(), 1)
 
     def test_has_been_sent(self):
-        email_admin = admin.IndividualEmailAdmin(Email, self.site)
+        email_admin = admin.IndividualEmailAdmin(IndividualEmail, self.site)
         sent = email_admin.has_been_sent(self.email)
         self.assertTrue(sent)
 
     def test_has_not_been_sent(self):
-        email_admin = admin.IndividualEmailAdmin(Email, self.site)
+        email_admin = admin.IndividualEmailAdmin(IndividualEmail, self.site)
         not_sent = email_admin.has_been_sent(Email())
         self.assertFalse(not_sent)
 
     def test_to(self):
-        email_admin = admin.IndividualEmailAdmin(Email, self.site)
+        email_admin = admin.IndividualEmailAdmin(IndividualEmail, self.site)
         to = email_admin.to(self.email)
         self.assertEqual(to, 'entity_name')
