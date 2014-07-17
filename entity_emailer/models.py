@@ -77,6 +77,9 @@ class EmailTemplate(models.Model):
         self.clean()
         super(EmailTemplate, self).save(*args, **kwargs)
 
+    def __unicode__(self):
+        return self.template_name
+
 
 class IndividualEmailManager(models.Manager):
     def get_queryset(self):

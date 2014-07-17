@@ -42,6 +42,13 @@ class EmailTemplateSaveTest(TestCase):
             EmailTemplate(template_name='empty').save()
 
 
+class EmailTemplateUnicodeTest(TestCase):
+    def test_returns_name(self):
+        name = 'test-name'
+        template = G(EmailTemplate, template_name=name, text_template='...')
+        self.assertEqual(template.__unicode__(), name)
+
+
 class IndividualEmailManagerTest(TestCase):
     def setUp(self):
         ct = G(ContentType)
