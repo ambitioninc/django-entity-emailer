@@ -97,7 +97,7 @@ class CreateIndividualEmailForm(forms.ModelForm):
 
     class Meta:
         model = IndividualEmail
-        fields = ['subject', 'from_email', 'to_entities', 'body', 'scheduled_time', 'scheduled_date']
+        fields = ['subject', 'from_email', 'to_entities', 'body', 'scheduled_date', 'scheduled_time']
 
     def save(self, *args, **kwargs):
         self.clean()
