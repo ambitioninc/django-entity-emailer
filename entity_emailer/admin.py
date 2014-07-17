@@ -83,12 +83,17 @@ class CreateIndividualEmailForm(forms.ModelForm):
     subject = forms.CharField(max_length=128, widget=forms.TextInput(attrs={'size': '80'}))
     from_email = forms.EmailField(widget=forms.TextInput(attrs={'size': '80'}))
     to_entities = forms.ModelMultipleChoiceField(
-        queryset=get_all_emailable_entities_qs(),
+        queryset=None,
         widget=FilteredSelectMultiple("Individuals", False)
     )
     body = forms.CharField(widget=forms.Textarea(attrs={'rows': '10', 'cols': '60'}))
     scheduled_date = forms.DateField(widget=SelectDateWidget(), required=False)
     scheduled_time = forms.TimeField(label="Scheduled time (UTC 24 hr) E.g. 18:25", required=False)
+
+    def __init__(self, *args, **kwargs):
+        x = super(CreateIndividualEmailForm, self).__init__(*args, **kwargs)
+        self.fields['to_entities'].queryset = get_all_emailable_entities_qs()
+        return x
 
     class Meta:
         model = IndividualEmail
