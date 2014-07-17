@@ -38,7 +38,7 @@ def get_all_emailable_entities_qs():
     """Return all the entities that can be emailed.
     """
     entities_with_meta = Entity.objects.filter(entity_meta__isnull=False)
-    ids = [e.id for e in entities_with_meta if e.entity_meta.get('email', None) is not None]
+    ids = (e.id for e in entities_with_meta if e.entity_meta.get('email', None) is not None)
     return Entity.objects.filter(pk__in=ids)
 
 

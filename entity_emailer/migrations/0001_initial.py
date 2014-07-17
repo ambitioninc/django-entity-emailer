@@ -8,7 +8,7 @@ from django.db import models
 class Migration(SchemaMigration):
 
     depends_on = (
-        ("entity", "0002_auto__del_field_entityrelationship_is_active"),
+        ('entity', '0001_initial'),
     )
 
     def forwards(self, orm):
