@@ -120,7 +120,7 @@ def render_templates(email):
     # Process html template
     if email.template.html_template_path:
         rendered_html = render_to_string(
-            email.template.text_template_path, email.context
+            email.template.html_template_path, email.context
         )
     elif email.template.html_template:
         context = Context(email.context)
