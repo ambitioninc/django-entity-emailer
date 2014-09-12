@@ -34,7 +34,7 @@ class Email(models.Model):
     template = models.ForeignKey('EmailTemplate')
     context = JSONField()
     uid = models.CharField(max_length=100, unique=True, null=True, default=None)
-    scheduled = models.DateTimeField(null=True, default=datetime.utcnow())
+    scheduled = models.DateTimeField(null=True, default=datetime.utcnow)
     sent = models.DateTimeField(null=True, default=None)
 
 
