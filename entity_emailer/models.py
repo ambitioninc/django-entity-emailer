@@ -34,7 +34,11 @@ class Email(models.Model):
     template = models.ForeignKey('EmailTemplate')
     context = JSONField()
     uid = models.CharField(max_length=100, unique=True, null=True, default=None)
-    scheduled = models.DateTimeField(null=True, default=datetime.utcnow())
+    # The `scheduled` field uses a default value of the datetime.utcnow function.
+    # This means it will be called any time a new Email is created, but it also
+    # allows for a different schedule to be set (to schedule the email for some
+    # time in the future), which would not be possible with an auto_add_now=True.
+    scheduled = models.DateTimeField(null=True, default=datetime.utcnow)
     sent = models.DateTimeField(null=True, default=None)
 
 
