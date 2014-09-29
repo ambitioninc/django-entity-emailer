@@ -1,8 +1,7 @@
 from datetime import datetime
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
-from entity import Entity
+from entity.models import Entity, EntityKind
 from entity_subscription.models import Source
 from jsonfield import JSONField
 
@@ -28,7 +27,7 @@ class Email(models.Model):
     """
     source = models.ForeignKey(Source)
     send_to = models.ForeignKey(Entity)
-    subentity_type = models.ForeignKey(ContentType, null=True, default=None)
+    subentity_kind = models.ForeignKey(EntityKind, null=True, default=None)
     subject = models.CharField(max_length=256)
     from_address = models.CharField(max_length=256, default='')
     template = models.ForeignKey('EmailTemplate')
@@ -87,7 +86,7 @@ class EmailTemplate(models.Model):
 
 class IndividualEmailManager(models.Manager):
     def get_queryset(self):
-        return super(IndividualEmailManager, self).get_queryset().filter(subentity_type__isnull=True)
+        return super(IndividualEmailManager, self).get_queryset().filter(subentity_kind__isnull=True)
 
 
 class IndividualEmail(Email):
@@ -101,7 +100,7 @@ class IndividualEmail(Email):
 
 class GroupEmailManager(models.Manager):
     def get_queryset(self):
-        return super(GroupEmailManager, self).get_queryset().filter(subentity_type__isnull=False)
+        return super(GroupEmailManager, self).get_queryset().filter(subentity_kind__isnull=False)
 
 
 class GroupEmail(Email):

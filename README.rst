@@ -156,11 +156,10 @@ emails, and a subscription to that combination of email and source.
 
     from entity_emailer import get_medium
     from entity_subscription.models import Source, Subscription
-    from entity import Entity
-    from django.contrib.contenttypes.models import ContentType
+    from entity.models import Entity, EntityKind
 
-    super_entity=Entity.objects.get_for_obj(my_group_object)
-    user_entity_type = ContentTypes.objects.get_for_model(MyUserModel)
+    super_entity = Entity.objects.get_for_obj(my_group_object)
+    user_entity_kind = EntityKind.objects.get(name='myusermodel')
 
     email_medium = get_medium()
     admin_source = Source.objects.create(
@@ -169,7 +168,7 @@ emails, and a subscription to that combination of email and source.
     )
     Subscription.objects.create(
         source=admin_source, medium=email_medium,
-        entity=super_entity, subentity_type=user_entity_type
+        entity=super_entity, subentity_kind=user_entity_kind
     )
 
 
@@ -249,9 +248,9 @@ entity with an ``entity_meta['email']`` value, it should be an entity
 that has a super-entity relationship to the entities the emails are to
 be sent to.
 
-Second, a ``subentity_type`` field specifies what type of subentity we
-want to email All sub-entities of the ``send_to`` entity and of the type
-specified by ``subentity_type`` must have an 'email' set in their
+Second, a ``subentity_kind`` field specifies what kind of subentity we
+want to email. All sub-entities of the ``send_to`` entity and of the kind
+specified by ``subentity_kind`` must have an 'email' set in their
 ``entity_meta``.
 
 A complete example is below:
@@ -260,8 +259,7 @@ A complete example is below:
 
     from entity_emailer.models import Email
 
-    from entity.models import Entity
-    from django.contrib.contenttypes import ContentType
+    from entity.models import Entity, EntityKind
 
     from my_example_app.models import Newsletter, NewsletterSubscribers
 
@@ -274,8 +272,8 @@ A complete example is below:
         # our send_to_entity, is a newsletter, a super-entity of
         # NewsletterSubscribers
         send_to=send_to_entity,
-        # Below is our subentity type, NewsletterSubscribers
-        subentity_type=ContentType.objects.get_for_model(NewsletterSubscribers)
+        # Below is our subentity kind, 'newslettersubscribers'
+        subentity_kind=EntityKind.objects.get('newslettersubscribers'),
         subject='This is a great offer!',
         template=new_item_template,
         context={'item': 'new car', 'value': '$35,000'}
@@ -301,11 +299,12 @@ provide a value for the ``scheduled`` field.
 .. code:: python
 
     from datetime import datetime
+    from entity.models import EntityKind
 
     Email.objects.create(
         source=marketing_source,
         send_to=send_to_entity,
-        subentity_type=ContentType.objects.get_for_model(NewsletterSubscribers)
+        subentity_kind=EntityKind.objects.get(name='newslettersubscribers'),
         subject='This is a great offer!',
         template=new_item_template,
         context={'item': 'New Hoverboard', 'value': '$35,000'}
@@ -369,3 +368,14 @@ and ``html_template`` are missing, if ``text_template_path`` and
 The email sending task will take care of rendering the template,
 and creating a text or text/html message based on the rendered
 template.
+
+
+Release Notes
+-------------
+
+* 0.4
+
+    * Updated to use ``EntityKind`` models rather than ``ContentType`` models for specifying entity groups.
+        A schema migration to remove the old ``subentity_type`` field while adding the new ``subentity_kind``
+        field were added so that users may make appropriate data migrations. Note that it is up to the
+        user to write the appropriate data migration for converting entity types to entity kinds.
