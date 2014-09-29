@@ -368,3 +368,13 @@ and ``html_template`` are missing, if ``text_template_path`` and
 The email sending task will take care of rendering the template,
 and creating a text or text/html message based on the rendered
 template.
+
+
+Release Notes
+-------------
+
+* 0.4
+
+    * Updated to use ``EntityKind`` models rather than ``ContentType`` models for specifying entity groups.
+        A schema migration to remove the old ``subentity_type`` field while adding the new ``subentity_kind``
+        field were added so that users may make appropriate data migrations.
