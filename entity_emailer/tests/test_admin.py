@@ -145,7 +145,7 @@ class GroupEmailAdminTest(TestCase):
     def setUp(self):
         self.ct = G(ContentType)
         self.site = AdminSite()
-        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
         self.email = Email(
             sent=datetime(2014, 1, 1, 12, 34),
             send_to=self.entity,
@@ -179,7 +179,7 @@ class GroupEmailAdminTest(TestCase):
 class IndividualEmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
-        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
         self.email = Email(
             sent=datetime(2014, 1, 1, 12, 34),
             send_to=self.entity,
@@ -213,7 +213,7 @@ class IndividualEmailAdminTest(TestCase):
 class EmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
-        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
         self.email = Email(
             sent=datetime(2014, 1, 1, 12, 34),
             send_to=self.entity,
