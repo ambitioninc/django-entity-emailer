@@ -377,4 +377,5 @@ Release Notes
 
     * Updated to use ``EntityKind`` models rather than ``ContentType`` models for specifying entity groups.
         A schema migration to remove the old ``subentity_type`` field while adding the new ``subentity_kind``
-        field were added so that users may make appropriate data migrations.
+        field were added so that users may make appropriate data migrations. Note that it is up to the
+        user to write the appropriate data migration for converting entity types to entity kinds.
