@@ -1,7 +1,7 @@
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django_dynamic_fixture import G
+from entity.models import EntityKind
 
 from entity_emailer.models import Email, EmailTemplate, IndividualEmail, GroupEmail
 
@@ -51,9 +51,9 @@ class EmailTemplateUnicodeTest(TestCase):
 
 class IndividualEmailManagerTest(TestCase):
     def setUp(self):
-        ct = G(ContentType)
+        ek = G(EntityKind)
         temp = G(EmailTemplate, text_template='...')
-        self.group_email = G(Email, template=temp, subentity_type=ct, context={})
+        self.group_email = G(Email, template=temp, subentity_kind=ek, context={})
         self.individual_email = G(Email, template=temp, subentity_type=None, context={})
 
     def test_get_queryset_excludes_groups(self):
@@ -67,10 +67,10 @@ class IndividualEmailManagerTest(TestCase):
 
 class GroupEmailManagerTest(TestCase):
     def setUp(self):
-        ct = G(ContentType)
+        ek = G(EntityKind)
         temp = G(EmailTemplate, text_template='...')
-        self.group_email = G(Email, template=temp, subentity_type=ct, context={})
-        self.individual_email = G(Email, template=temp, subentity_type=None, context={})
+        self.group_email = G(Email, template=temp, subentity_kind=ek, context={})
+        self.individual_email = G(Email, template=temp, subentity_kind=None, context={})
 
     def test_get_queryset_excludes_individuals(self):
         qs = GroupEmail.objects.get_queryset()
@@ -78,6 +78,4 @@ class GroupEmailManagerTest(TestCase):
 
     def test_get_queryset_includes_groups(self):
         qs = GroupEmail.objects.get_queryset()
-        print qs.values()
-        print self.group_email.__dict__
         self.assertIn(self.group_email.id, [e.id for e in qs])
