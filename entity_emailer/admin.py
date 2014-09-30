@@ -4,25 +4,10 @@ from django import forms
 from django.forms.extras.widgets import SelectDateWidget
 from django.contrib import admin
 from django.contrib.admin.widgets import FilteredSelectMultiple
-from django.contrib.contenttypes.models import ContentType
-from entity import Entity, EntityRelationship
+from entity.models import Entity, EntityRelationship, EntityKind
 
 from entity_emailer.models import Email, GroupEmail, IndividualEmail
 from entity_emailer.utils import get_admin_source, get_admin_template
-
-
-def get_subentity_content_type_qs():
-    """Return a queryset of contenttypes of subentities.
-
-    This queryset filters the contenttypes table to only include the
-    contenttypes of subentities mirrored by the Entity framework.
-    """
-    return ContentType.objects.filter(
-        pk__in=EntityRelationship.objects.
-        select_related('sub_entity').
-        values('sub_entity__entity_type').
-        distinct()
-    )
 
 
 def get_all_super_entities_qs():
@@ -31,7 +16,7 @@ def get_all_super_entities_qs():
     Sorted by the number of entities of that type.
     """
     super_entities = EntityRelationship.objects.values_list('super_entity', flat=True).distinct()
-    return Entity.objects.filter(pk__in=super_entities).order_by('entity_type')
+    return Entity.objects.filter(pk__in=super_entities).order_by('entity_kind')
 
 
 def get_all_emailable_entities_qs():
@@ -46,14 +31,14 @@ class CreateGroupEmailForm(forms.ModelForm):
     subject = forms.CharField(max_length=128, widget=forms.TextInput(attrs={'size': '80'}))
     from_email = forms.EmailField(widget=forms.TextInput(attrs={'size': '80'}))
     to_entity = forms.ModelChoiceField(queryset=get_all_super_entities_qs())
-    subentity_type = forms.ModelChoiceField(queryset=get_subentity_content_type_qs(), required=False)
+    subentity_kind = forms.ModelChoiceField(queryset=EntityKind.objects.all(), required=False)
     body = forms.CharField(widget=forms.Textarea(attrs={'rows': '10', 'cols': '60'}))
     scheduled_date = forms.DateField(widget=SelectDateWidget(), required=False)
     scheduled_time = forms.TimeField(label="Scheduled time (UTC 24 hr) E.g. 18:25", required=False)
 
     class Meta:
         model = GroupEmail
-        fields = ['subject', 'from_email', 'to_entity', 'subentity_type', 'body', 'scheduled_date']
+        fields = ['subject', 'from_email', 'to_entity', 'subentity_kind', 'body', 'scheduled_date']
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -65,7 +50,7 @@ class CreateGroupEmailForm(forms.ModelForm):
         created_email = Email(
             source=get_admin_source(),
             send_to=self.cleaned_data['to_entity'],
-            subentity_type=self.cleaned_data['subentity_type'],
+            subentity_kind=self.cleaned_data['subentity_kind'],
             subject=self.cleaned_data['subject'],
             from_address=self.cleaned_data['from_email'],
             template=get_admin_template(),
@@ -84,7 +69,7 @@ class CreateIndividualEmailForm(forms.ModelForm):
     from_email = forms.EmailField(widget=forms.TextInput(attrs={'size': '80'}))
     to_entities = forms.ModelMultipleChoiceField(
         queryset=None,
-        widget=FilteredSelectMultiple("Individuals", False)
+        widget=FilteredSelectMultiple('Individuals', False)
     )
     body = forms.CharField(widget=forms.Textarea(attrs={'rows': '10', 'cols': '60'}))
     scheduled_date = forms.DateField(widget=SelectDateWidget(), required=False)
@@ -111,7 +96,7 @@ class CreateIndividualEmailForm(forms.ModelForm):
             created_email = Email(
                 source=get_admin_source(),
                 send_to=entity,
-                subentity_type=None,
+                subentity_kind=None,
                 subject=self.cleaned_data['subject'],
                 from_address=self.cleaned_data['from_email'],
                 template=get_admin_template(),
@@ -128,7 +113,7 @@ class CreateIndividualEmailForm(forms.ModelForm):
 
 
 class GroupEmailAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'to', 'subentity_type', 'scheduled', 'has_been_sent')
+    list_display = ('subject', 'to', 'subentity_kind', 'scheduled', 'has_been_sent')
     form = CreateGroupEmailForm
 
     def get_queryset(self, request):
@@ -160,7 +145,7 @@ class IndividualEmailAdmin(admin.ModelAdmin):
 
 
 class EmailAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'to', 'subentity_type', 'scheduled', 'has_been_sent')
+    list_display = ('subject', 'to', 'subentity_kind', 'scheduled', 'has_been_sent')
 
     def has_been_sent(self, obj):
         return (obj.sent is not None)

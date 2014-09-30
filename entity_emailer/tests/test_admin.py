@@ -1,10 +1,9 @@
 from datetime import datetime
 
 from django.contrib.admin.sites import AdminSite
-from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from django_dynamic_fixture import G
-from entity import Entity, EntityRelationship
+from entity.models import Entity, EntityRelationship, EntityKind
 from entity_subscription.models import Source
 
 from entity_emailer import admin
@@ -13,23 +12,18 @@ from entity_emailer.models import Email, EmailTemplate, GroupEmail, IndividualEm
 
 class SubentityContentTypeQsTest(TestCase):
     def setUp(self):
-        self.sub_entity_type_1 = G(ContentType)
-        self.sub_entity_type_2 = G(ContentType)
-        self.super_entity_type = G(ContentType)
-        sub_entity_1 = G(Entity, entity_type=self.sub_entity_type_1)
-        sub_entity_2 = G(Entity, entity_type=self.sub_entity_type_2)
-        super_entity = G(Entity, entity_type=self.super_entity_type)
+        self.sub_entity_kind_1 = G(EntityKind)
+        self.sub_entity_kind_2 = G(EntityKind)
+        self.super_entity_type = G(EntityKind)
+        sub_entity_1 = G(Entity, entity_kind=self.sub_entity_kind_1)
+        sub_entity_2 = G(Entity, entity_kind=self.sub_entity_kind_2)
+        super_entity = G(Entity, entity_kind=self.super_entity_type)
         G(EntityRelationship, sub_entity=sub_entity_1, super_entity=super_entity)
         G(EntityRelationship, sub_entity=sub_entity_2, super_entity=super_entity)
 
-    def test_filters_non_subentity_types(self):
-        qs = admin.get_subentity_content_type_qs()
-        self.assertNotIn(self.super_entity_type, list(qs))
-
-    def test_returns_subentity_types(self):
-        qs = admin.get_subentity_content_type_qs()
-        self.assertIn(self.sub_entity_type_1, list(qs))
-        self.assertIn(self.sub_entity_type_2, list(qs))
+    def test_returns_subentity_kinds(self):
+        self.assertIn(self.sub_entity_kind_1, list(EntityKind.objects.all()))
+        self.assertIn(self.sub_entity_kind_2, list(EntityKind.objects.all()))
 
 
 class GetAllSuperEntitiesQsTest(TestCase):
@@ -143,9 +137,9 @@ class CreateIndividualEmailFormTest(TestCase):
 
 class GroupEmailAdminTest(TestCase):
     def setUp(self):
-        self.ct = G(ContentType)
+        self.ek = G(EntityKind)
         self.site = AdminSite()
-        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
         self.email = Email(
             sent=datetime(2014, 1, 1, 12, 34),
             send_to=self.entity,
@@ -154,8 +148,8 @@ class GroupEmailAdminTest(TestCase):
     def test_get_queryset_filters_non_admin(self):
         admin_template = G(EmailTemplate, template_name='html_safe', text_template="...")
         other_template = G(EmailTemplate, template_name='other', text_template="...")
-        G(Email, template=admin_template, context={}, subentity_type=self.ct)
-        G(Email, template=other_template, context={}, subentity_type=self.ct)
+        G(Email, template=admin_template, context={}, subentity_kind=self.ek)
+        G(Email, template=other_template, context={}, subentity_kind=self.ek)
         email_admin = admin.GroupEmailAdmin(GroupEmail, self.site)
         qs = email_admin.get_queryset(None)
         self.assertEqual(qs.count(), 1)
@@ -179,7 +173,7 @@ class GroupEmailAdminTest(TestCase):
 class IndividualEmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
-        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
         self.email = Email(
             sent=datetime(2014, 1, 1, 12, 34),
             send_to=self.entity,
@@ -213,7 +207,7 @@ class IndividualEmailAdminTest(TestCase):
 class EmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
-        self.entity = G(Entity, entity_meta={'name': 'entity_name'})
+        self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
         self.email = Email(
             sent=datetime(2014, 1, 1, 12, 34),
             send_to=self.entity,
