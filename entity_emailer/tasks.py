@@ -106,13 +106,15 @@ def render_templates(email):
       A tuple of (rendered_text, rendered_html). Either, but not both
       may be an empty string.
     """
+    context = email.get_context()
+
     # Process text template:
     if email.template.text_template_path:
         rendered_text = render_to_string(
-            email.template.text_template_path, email.context
+            email.template.text_template_path, context
         )
     elif email.template.text_template:
-        context = Context(email.context)
+        context = Context(context)
         rendered_text = Template(email.template.text_template).render(context)
     else:
         rendered_text = ''
@@ -120,10 +122,10 @@ def render_templates(email):
     # Process html template
     if email.template.html_template_path:
         rendered_html = render_to_string(
-            email.template.html_template_path, email.context
+            email.template.html_template_path, context
         )
     elif email.template.html_template:
-        context = Context(email.context)
+        context = Context(context)
         rendered_html = Template(email.template.html_template).render(context)
     else:
         rendered_html = ''
