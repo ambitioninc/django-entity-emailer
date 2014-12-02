@@ -92,10 +92,11 @@ def get_subscribed_email_addresses(email):
             for se in recipient.get_sub_entities() if se.entity_kind_id == email.subentity_kind_id
         ]
     else:
-        all_entities = email.recipients.all()
+        all_entities = list(email.recipients.all())
+
     send_to = Subscription.objects.filter_not_subscribed(
         source=email.source, medium=email_medium, entities=all_entities
-    )
+    ) if all_entities else []
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
 
