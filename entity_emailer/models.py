@@ -28,8 +28,8 @@ class Email(models.Model):
     from emails of that source.
     """
     source = models.ForeignKey(Source)
-    send_to = models.ForeignKey(Entity)
     subentity_kind = models.ForeignKey(EntityKind, null=True, default=None)
+    recipients = models.ManyToManyField(Entity, related_name='+')
     subject = models.CharField(max_length=256)
     from_address = models.CharField(max_length=256, default='')
     template = models.ForeignKey('EmailTemplate')
