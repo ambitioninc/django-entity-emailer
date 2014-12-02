@@ -376,6 +376,14 @@ and creating a text or text/html message based on the rendered
 template.
 
 
+Showing Emails in the Browser
+-----------------------------
+
+Users may view emails in a browser with this application. This is accomplished by including
+the ``entity_emailer`` urls into the Django project and providing the PK of the email as the url argument.
+The url view will use the text/html templates of the email to render it as a web page.
+
+
 Release Notes
 -------------
 
@@ -383,6 +391,7 @@ Release Notes
 
     * Added a ``context_loader`` field on the ``EmailTemplate`` model. This function allows a user to provide a function
         path that for fetching and returning data from the stored ``Email`` context.
+    * Added a basic ``EmailView`` and urls for rendering emails through a Django view.
 
 * 0.4
 
