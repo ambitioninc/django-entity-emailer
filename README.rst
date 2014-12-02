@@ -366,10 +366,10 @@ and ``html_template`` are missing, if ``text_template_path`` and
 ``text_template`` are both provided, or if ``html_template_path`` and
 ``html_template`` are both provided, a ``ValidationError`` will be raised.
 
-If a ``context_loader`` value is provided, this function will be passed the
-context of the email and is responsible for returning the context passed to
-the email template. This provides the user further flexibility in fetching
-information related to the serialized context before it is rendered.
+If a ``context_loader`` path to a function is provided, the serialized context
+of the email will be passed through this function. This provides the ability
+for the function to fetch other non-serializable attributes about the context
+and pass them along before rendering.
 
 The email sending task will take care of rendering the template,
 and creating a text or text/html message based on the rendered
