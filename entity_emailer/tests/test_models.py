@@ -1,9 +1,41 @@
+from datetime import datetime
+
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.test import TestCase, SimpleTestCase
 from django_dynamic_fixture import G, N
-from entity.models import EntityKind
+from entity.models import EntityKind, Entity
+from entity_subscription.models import Source
+from freezegun import freeze_time
 
 from entity_emailer.models import Email, EmailTemplate, IndividualEmail, GroupEmail
+
+
+class EmailManagerTest(TestCase):
+    @freeze_time('2014-12-2')
+    def test_create_email_no_scheduled_time(self):
+        email = Email.objects.create_email(
+            source=G(Source), template=G(EmailTemplate, text_template_path='hi'), context={})
+        self.assertEqual(email.scheduled, datetime(2014, 12, 2))
+
+    def test_create_email_w_scheduled_time_set_to_none(self):
+        email = Email.objects.create_email(
+            source=G(Source), template=G(EmailTemplate, text_template_path='hi'), context={},
+            scheduled=None)
+        self.assertIsNone(email.scheduled)
+
+    @freeze_time('2014-12-2')
+    def test_create_email_w_scheduled_time_set_to_dt(self):
+        email = Email.objects.create_email(
+            source=G(Source), template=G(EmailTemplate, text_template_path='hi'), context={},
+            scheduled=datetime(2013, 4, 2))
+        self.assertEqual(email.scheduled, datetime(2013, 4, 2))
+
+    def test_w_multiple_recipients(self):
+        recipients = [G(Entity), G(Entity)]
+        email = Email.objects.create_email(
+            source=G(Source), recipients=recipients, template=G(EmailTemplate, text_template_path='hi'), context={},
+            scheduled=datetime(2013, 4, 2))
+        self.assertEqual(set(email.recipients.all()), set(recipients))
 
 
 def basic_context_loader(context):

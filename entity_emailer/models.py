@@ -8,6 +8,27 @@ from entity_subscription.models import Source
 from jsonfield import JSONField
 
 
+class EmailManager(models.Manager):
+    """
+    Provides the ability to easily create emails with the recipients.
+    """
+    def create_email(self, recipients=None, **kwargs):
+        """
+        Note that we pop the scheduled time from the kwargs before creating the email
+        and then update the scheduled time after the recipients have been added. This
+        avoids the potential race condition of the email being created before it is
+        picked up by a task that sends it.
+        """
+        scheduled = kwargs.pop('scheduled', datetime.utcnow())
+        email = Email.objects.create(scheduled=None, **kwargs)
+        if recipients:
+            email.recipients.add(*recipients)
+
+        email.scheduled = scheduled
+        email.save()
+        return email
+
+
 class Email(models.Model):
     """Save an Email object and it is sent automagically!
 
@@ -41,6 +62,8 @@ class Email(models.Model):
     # time in the future), which would not be possible with an auto_add_now=True.
     scheduled = models.DateTimeField(null=True, default=datetime.utcnow)
     sent = models.DateTimeField(null=True, default=None)
+
+    objects = EmailManager()
 
     def get_context(self):
         """
