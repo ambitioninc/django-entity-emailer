@@ -207,6 +207,13 @@ class RenderTemplatesTest(TestCase):
         self.assertEqual(rendered_text, 'Hi Mr. T')
         self.assertEqual(rendered_html, '')
 
+    def test_html_path_on_disk(self):
+        template = G(EmailTemplate, html_template_path='hi_template.html')
+        email = N(Email, template=template, context={'entity': 'Mr. T'})
+        rendered_text, rendered_html = tasks.render_templates(email)
+        self.assertEqual(rendered_text, '')
+        self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')
+
     @patch('__builtin__.open')
     def test_html_path(self, open_mock):
         temp = '<html>Hi {{ name }}</html>'
