@@ -1,20 +1,20 @@
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.test import TestCase, SimpleTestCase
-from django_dynamic_fixture import G
+from django_dynamic_fixture import G, N
 from entity.models import EntityKind
 
 from entity_emailer.models import Email, EmailTemplate, IndividualEmail, GroupEmail
 
 
-def dummy_context_loader(context):
-    pass
+def basic_context_loader(context):
+    return {'hello': 'hello'}
 
 
 class EmailTemplateGetContextLoaderTest(SimpleTestCase):
     def test_loads_context_loader(self):
-        template = EmailTemplate(context_loader='entity_emailer.tests.test_models.dummy_context_loader')
+        template = EmailTemplate(context_loader='entity_emailer.tests.test_models.basic_context_loader')
         loader_func = template.get_context_loader_function()
-        self.assertEqual(loader_func, dummy_context_loader)
+        self.assertEqual(loader_func, basic_context_loader)
 
     def test_invalid_context_loader(self):
         template = EmailTemplate(context_loader='entity_emailer.tests.test_models.invalid_context_loader')
@@ -71,6 +71,19 @@ class EmailTemplateUnicodeTest(TestCase):
         name = 'test-name'
         template = G(EmailTemplate, template_name=name, text_template='...')
         self.assertEqual(template.__unicode__(), name)
+
+
+class EmailGetContext(SimpleTestCase):
+    def test_without_context_loader(self):
+        email = N(
+            Email, context={'hi': 'hi'}, persist_dependencies=False, template=N(
+                EmailTemplate, context_loader='entity_emailer.tests.test_models.basic_context_loader',
+                persist_dependencies=False))
+        self.assertEqual(email.get_context(), {'hello': 'hello'})
+
+    def test_with_context_loader(self):
+        email = N(Email, context={'hi': 'hi'}, persist_dependencies=False)
+        self.assertEqual(email.get_context(), {'hi': 'hi'})
 
 
 class IndividualEmailManagerTest(TestCase):
