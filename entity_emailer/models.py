@@ -40,7 +40,8 @@ class Email(models.Model):
 
     Emails can be sent to an individual, by setting subentities to
     False, or to a group, by setting send_to to a superentity, like a
-    Team or Organization, and setting subentities to True.
+    Team or Organization, and setting subentities to True. This applies
+    to every entity in the recipients list.
 
     Sending an email happens automatically, and consists of rendering
     the given template with the given context.
