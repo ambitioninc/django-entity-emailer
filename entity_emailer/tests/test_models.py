@@ -1,12 +1,28 @@
-from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.core.exceptions import ValidationError, ImproperlyConfigured
+from django.test import TestCase, SimpleTestCase
 from django_dynamic_fixture import G
 from entity.models import EntityKind
 
 from entity_emailer.models import Email, EmailTemplate, IndividualEmail, GroupEmail
 
 
-class EmailTemplateCleanTest(TestCase):
+def dummy_context_loader(context):
+    pass
+
+
+class EmailTemplateGetContextLoaderTest(SimpleTestCase):
+    def test_loads_context_loader(self):
+        template = EmailTemplate(context_loader='entity_emailer.tests.test_models.dummy_context_loader')
+        loader_func = template.get_context_loader_function()
+        self.assertEqual(loader_func, dummy_context_loader)
+
+    def test_invalid_context_loader(self):
+        template = EmailTemplate(context_loader='entity_emailer.tests.test_models.invalid_context_loader')
+        with self.assertRaises(ImproperlyConfigured):
+            template.get_context_loader_function()
+
+
+class EmailTemplateCleanTest(SimpleTestCase):
     def test_validates(self):
         template = EmailTemplate(
             template_name='test',
@@ -14,6 +30,14 @@ class EmailTemplateCleanTest(TestCase):
         )
         template.clean()
         self.assertTrue(template)
+
+    def test_invalid_context_path_does_not_validate(self):
+        with self.assertRaises(ValidationError):
+            EmailTemplate(
+                template_name='test',
+                text_template_path='test/path',
+                context_loader='invalid_path',
+            ).clean()
 
     def test_no_template_does_not_validate(self):
         with self.assertRaises(ValidationError):
