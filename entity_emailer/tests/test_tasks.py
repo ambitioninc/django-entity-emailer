@@ -180,6 +180,16 @@ class GetEmailAddressesTest(TestCase):
         self.assertEqual(set(addresses), expected_addresses)
 
 
+def render_template_context_loader(context):
+    """
+    Assumes the context has an entity ID and returns the context with
+    the fetched entity's display name
+    """
+    return {
+        'entity': Entity.objects.get(id=context['entity']).display_name
+    }
+
+
 class RenderTemplatesTest(TestCase):
     @patch('__builtin__.open')
     def test_text_path(self, open_mock):
@@ -206,6 +216,19 @@ class RenderTemplatesTest(TestCase):
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
         self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')
+
+    @patch('__builtin__.open')
+    def test_html_path_with_context_loader(self, open_mock):
+        temp = '<html>Hi {{ entity }}</html>'
+        open_mock.return_value.__enter__.return_value.read.return_value = temp
+        template = G(
+            EmailTemplate, html_template_path='NotNothing',
+            context_loader='entity_emailer.tests.test_tasks.render_template_context_loader')
+        person = G(Entity, display_name='Swansonbot')
+        email = N(Email, template=template, context={'entity': person.id})
+        rendered_text, rendered_html = tasks.render_templates(email)
+        self.assertEqual(rendered_text, '')
+        self.assertEqual(rendered_html, '<html>Hi Swansonbot</html>')
 
     def test_test_textfield(self):
         temp = '<html>Hi {{ name }}</html>'
