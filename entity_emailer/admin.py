@@ -48,16 +48,16 @@ class CreateGroupEmailForm(forms.ModelForm):
         if not (self.cleaned_data['scheduled_date'] and self.cleaned_data['scheduled_time']):
             scheduled_datetime += timedelta(minutes=5)
 
-        created_email = Email.objects.create(
+        created_email = Email.objects.create_email(
             source=get_admin_source(),
             subentity_kind=self.cleaned_data['subentity_kind'],
             subject=self.cleaned_data['subject'],
             from_address=self.cleaned_data['from_email'],
             template=get_admin_template(),
             context={'html': self.cleaned_data['body']},
-            scheduled=scheduled_datetime
+            scheduled=scheduled_datetime,
+            recipients=[self.cleaned_data['to_entity']]
         )
-        created_email.recipients.add(self.cleaned_data['to_entity'])
         return created_email
 
     def save_m2m(self, *args, **kwargs):
@@ -93,7 +93,7 @@ class CreateIndividualEmailForm(forms.ModelForm):
             scheduled_datetime += timedelta(minutes=5)
 
         for entity in self.cleaned_data['to_entities']:
-            created_email = Email.objects.create(
+            created_email = Email.objects.create_email(
                 source=get_admin_source(),
                 subentity_kind=None,
                 subject=self.cleaned_data['subject'],
@@ -101,8 +101,8 @@ class CreateIndividualEmailForm(forms.ModelForm):
                 template=get_admin_template(),
                 context={'html': self.cleaned_data['body']},
                 scheduled=scheduled_datetime,
+                recipients=[entity],
             )
-            created_email.recipients.add(entity)
 
         return created_email
 
