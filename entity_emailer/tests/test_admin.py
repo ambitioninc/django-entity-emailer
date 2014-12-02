@@ -2,7 +2,7 @@ from datetime import datetime
 
 from django.contrib.admin.sites import AdminSite
 from django.test import TestCase
-from django_dynamic_fixture import G
+from django_dynamic_fixture import G, F
 from entity.models import Entity, EntityRelationship, EntityKind
 from entity_subscription.models import Source
 
@@ -140,10 +140,9 @@ class GroupEmailAdminTest(TestCase):
         self.ek = G(EntityKind)
         self.site = AdminSite()
         self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
-        self.email = Email(
-            sent=datetime(2014, 1, 1, 12, 34),
-            send_to=self.entity,
-        )
+        self.email = G(
+            Email, sent=datetime(2014, 1, 1, 12, 34), recipients=[self.entity], context={},
+            template=F(text_template_path='hi'))
 
     def test_get_queryset_filters_non_admin(self):
         admin_template = G(EmailTemplate, template_name='html_safe', text_template="...")
@@ -174,10 +173,9 @@ class IndividualEmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
-        self.email = Email(
-            sent=datetime(2014, 1, 1, 12, 34),
-            send_to=self.entity,
-        )
+        self.email = G(
+            Email, sent=datetime(2014, 1, 1, 12, 34), recipients=[self.entity], context={},
+            template=F(text_template_path='hi'))
 
     def test_get_queryset_filters_non_admin(self):
         admin_template = G(EmailTemplate, template_name='html_safe', text_template="...")
@@ -208,10 +206,9 @@ class EmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
-        self.email = Email(
-            sent=datetime(2014, 1, 1, 12, 34),
-            send_to=self.entity,
-        )
+        self.email = G(
+            Email, sent=datetime(2014, 1, 1, 12, 34), recipients=[self.entity], context={},
+            template=F(text_template_path='hi'))
 
     def test_has_not_been_sent(self):
         email_admin = admin.EmailAdmin(Email, self.site)

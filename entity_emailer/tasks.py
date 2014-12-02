@@ -86,9 +86,13 @@ def get_subscribed_email_addresses(email):
     """
     email_medium = get_medium()
     if email.subentity_kind is not None:
-        all_entities = [se for se in email.send_to.get_sub_entities() if se.entity_kind_id == email.subentity_kind_id]
+        all_entities = [
+            se
+            for recipient in email.recipients.all()
+            for se in recipient.get_sub_entities() if se.entity_kind_id == email.subentity_kind_id
+        ]
     else:
-        all_entities = [email.send_to]
+        all_entities = email.recipients.all()
     send_to = Subscription.objects.filter_not_subscribed(
         source=email.source, medium=email_medium, entities=all_entities
     )
