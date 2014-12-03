@@ -185,6 +185,34 @@ class ConvertEventsToEmailsTest(TestCase):
         self.assertEquals(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
+    def test_basic_only_following_false_group_subscription_with_unsubscribed(self):
+        source = G(Source)
+        ek = G(EntityKind)
+        e = G(Entity, entity_kind=ek)
+        se = G(Entity)
+        G(EntityRelationship, sub_entity=e, super_entity=se)
+        other_e = G(Entity, entity_kind=ek)
+        G(EntityRelationship, sub_entity=other_e, super_entity=se)
+
+        G(Subscription, entity=se, sub_entity_kind=ek, source=source, medium=self.email_medium, only_following=False)
+        G(Unsubscription, entity=e, source=source, medium=self.email_medium)
+        G(EmailTemplate, template_name='template', text_template_path='path')
+        email_context = {
+            'entity_emailer_template': 'template',
+            'entity_emailer_subject': 'hi',
+        }
+        event = G(Event, source=source, context=email_context)
+        G(EventActor, event=event, entity=e)
+
+        tasks.convert_events_to_emails()
+
+        email = Email.objects.get()
+        self.assertEquals(set(email.recipients.all()), set([other_e]))
+        self.assertEquals(email.context, email_context)
+        self.assertEquals(email.subject, 'hi')
+        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+
+    @freeze_time('2013-1-2')
     def test_multiple_events_only_following_false(self):
         source = G(Source)
         e = G(Entity)
