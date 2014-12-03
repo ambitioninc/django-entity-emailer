@@ -21,6 +21,11 @@ class ConvertEventsToEmailsTest(TestCase):
         call_command('add_email_medium')
         self.email_medium = Medium.objects.get(name='email')
 
+    @patch('entity_emailer.tasks.convert_events_to_emails', spec_set=True)
+    def test_task(self, mock_convert_events_to_emails):
+        tasks.ConvertEventsToEmails().run()
+        mock_convert_events_to_emails.assert_called_once_with()
+
     def test_no_events(self):
         tasks.convert_events_to_emails()
         self.assertFalse(Email.objects.exists())

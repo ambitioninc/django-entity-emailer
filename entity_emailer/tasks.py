@@ -141,6 +141,18 @@ def render_templates(email):
     return (rendered_text, rendered_html)
 
 
+class ConvertEventsToEmails(Task):
+    """
+    Converts events to emails based on the email subscriptions.
+    """
+    def run(self, *args, **kwargs):
+        with db_mutex('convert-events-to-emails'):
+            self.run_worker(*args, **kwargs)
+
+    def run_worker(self, *args, **kwargs):
+        convert_events_to_emails()
+
+
 def convert_events_to_emails():
     """
     Converts unseen events to emails and marks them as seen.
