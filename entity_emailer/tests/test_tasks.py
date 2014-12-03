@@ -1,16 +1,31 @@
 from datetime import datetime
 
 from django.core import mail
+from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
 from django_dynamic_fixture import G, N
 from entity.models import Entity, EntityRelationship, EntityKind
-from entity_event.models import Medium, Source, Subscription, Unsubscription
+from entity_event.models import Medium, Source, Subscription, Unsubscription, Event
 from freezegun import freeze_time
 from mock import patch
 
 from entity_emailer import tasks
 from entity_emailer.models import Email, EmailTemplate
+
+
+class ConvertEventsToEmailsTest(TestCase):
+    def setUp(self):
+        call_command('add_email_medium')
+
+    def test_no_events(self):
+        tasks.convert_events_to_emails()
+        self.assertFalse(Email.objects.exists())
+
+    def test_no_subscriptions(self):
+        G(Event, context={})
+        tasks.convert_events_to_emails()
+        self.assertFalse(Email.objects.exists())
 
 
 @freeze_time('2014-01-05')

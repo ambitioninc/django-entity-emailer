@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from celery import Task
 from db_mutex import db_mutex
@@ -8,8 +9,10 @@ from django.template.loader import render_to_string
 from django.template import Context, Template
 from entity_event.models import Subscription
 
-from entity_emailer.models import Email
+from entity_emailer.models import Email, EmailTemplate
 from entity_emailer import get_medium
+
+LOG = logging.getLogger(__name__)
 
 
 class SendUnsentScheduledEmails(Task):
@@ -136,3 +139,24 @@ def render_templates(email):
         rendered_html = ''
 
     return (rendered_text, rendered_html)
+
+
+def convert_events_to_emails():
+    """
+    Converts unseen events to emails and marks them as seen.
+    """
+    email_medium = get_medium()
+
+    for event, targets in email_medium.events_targets(seen=False):
+        try:
+            template_name = event.context.get('entity_emailer_template', '')
+            template = EmailTemplate.objects.get(template_name=template_name)
+        except EmailTemplate.DoesNotExist:
+            err = 'Event does not have a template or the template does not exist. Context: {context}'
+            LOG.error(err.format(note=event, context=event.context))
+            # If we can't find a template, skip creating this email.
+            continue
+
+        Email.objects.create_email(
+            source=event.source, recipients=targets, template=template, context=event.context,
+            subject=event.context.get('entity_emailer_subject', 'Email'))
