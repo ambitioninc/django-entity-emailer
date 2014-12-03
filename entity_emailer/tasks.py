@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core import mail
 from django.template.loader import render_to_string
 from django.template import Context, Template
-from entity_subscription.models import Subscription
+from entity_event.models import Subscription
 
 from entity_emailer.models import Email
 from entity_emailer import get_medium
@@ -85,11 +85,11 @@ def get_subscribed_email_addresses(email):
       A list of strings: email addresses.
     """
     email_medium = get_medium()
-    if email.subentity_kind is not None:
+    if email.sub_entity_kind is not None:
         all_entities = [
             se
             for recipient in email.recipients.all()
-            for se in recipient.get_sub_entities() if se.entity_kind_id == email.subentity_kind_id
+            for se in recipient.get_sub_entities() if se.entity_kind_id == email.sub_entity_kind_id
         ]
     else:
         all_entities = list(email.recipients.all())

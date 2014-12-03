@@ -5,6 +5,9 @@ from south.v2 import DataMigration
 from django.db import models
 
 class Migration(DataMigration):
+    depends_on = (
+        ('entity_subscription', '0001_initial'),
+    )
 
     def forwards(self, orm):
         old_to_new_sources = {
@@ -41,6 +44,12 @@ class Migration(DataMigration):
             'display_name': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '256', 'db_index': 'True'})
+        },
+        u'entity.entityrelationship': {
+            'Meta': {'object_name': 'EntityRelationship'},
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'sub_entity': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'super_relationships'", 'to': u"orm['entity.Entity']"}),
+            'super_entity': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'sub_relationships'", 'to': u"orm['entity.Entity']"})
         },
         u'entity_emailer.email': {
             'Meta': {'object_name': 'Email'},
@@ -158,5 +167,5 @@ class Migration(DataMigration):
         }
     }
 
-    complete_apps = ['entity_event', 'entity_subscription', 'entity_emailer']
+    complete_apps = ['entity', 'entity_subscription', 'entity_event', 'entity_emailer']
     symmetrical = True

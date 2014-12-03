@@ -1,41 +1,9 @@
-from datetime import datetime
-
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.test import TestCase, SimpleTestCase
 from django_dynamic_fixture import G, N
-from entity.models import EntityKind, Entity
-from entity_subscription.models import Source
-from freezegun import freeze_time
+from entity.models import EntityKind
 
 from entity_emailer.models import Email, EmailTemplate, IndividualEmail, GroupEmail
-
-
-class EmailManagerTest(TestCase):
-    @freeze_time('2014-12-2')
-    def test_create_email_no_scheduled_time(self):
-        email = Email.objects.create_email(
-            source=G(Source), template=G(EmailTemplate, text_template_path='hi'), context={})
-        self.assertEqual(email.scheduled, datetime(2014, 12, 2))
-
-    def test_create_email_w_scheduled_time_set_to_none(self):
-        email = Email.objects.create_email(
-            source=G(Source), template=G(EmailTemplate, text_template_path='hi'), context={},
-            scheduled=None)
-        self.assertIsNone(email.scheduled)
-
-    @freeze_time('2014-12-2')
-    def test_create_email_w_scheduled_time_set_to_dt(self):
-        email = Email.objects.create_email(
-            source=G(Source), template=G(EmailTemplate, text_template_path='hi'), context={},
-            scheduled=datetime(2013, 4, 2))
-        self.assertEqual(email.scheduled, datetime(2013, 4, 2))
-
-    def test_w_multiple_recipients(self):
-        recipients = [G(Entity), G(Entity)]
-        email = Email.objects.create_email(
-            source=G(Source), recipients=recipients, template=G(EmailTemplate, text_template_path='hi'), context={},
-            scheduled=datetime(2013, 4, 2))
-        self.assertEqual(set(email.recipients.all()), set(recipients))
 
 
 def basic_context_loader(context):
@@ -122,7 +90,7 @@ class IndividualEmailManagerTest(TestCase):
     def setUp(self):
         ek = G(EntityKind)
         temp = G(EmailTemplate, text_template='...')
-        self.group_email = G(Email, template=temp, subentity_kind=ek, context={})
+        self.group_email = G(Email, template=temp, sub_entity_kind=ek, context={})
         self.individual_email = G(Email, template=temp, subentity_type=None, context={})
 
     def test_get_queryset_excludes_groups(self):
@@ -138,8 +106,8 @@ class GroupEmailManagerTest(TestCase):
     def setUp(self):
         ek = G(EntityKind)
         temp = G(EmailTemplate, text_template='...')
-        self.group_email = G(Email, template=temp, subentity_kind=ek, context={})
-        self.individual_email = G(Email, template=temp, subentity_kind=None, context={})
+        self.group_email = G(Email, template=temp, sub_entity_kind=ek, context={})
+        self.individual_email = G(Email, template=temp, sub_entity_kind=None, context={})
 
     def test_get_queryset_excludes_individuals(self):
         qs = GroupEmail.objects.get_queryset()

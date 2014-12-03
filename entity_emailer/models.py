@@ -50,7 +50,7 @@ class Email(models.Model):
     from emails of that source.
     """
     source = models.ForeignKey(Source)
-    subentity_kind = models.ForeignKey(EntityKind, null=True, default=None)
+    sub_entity_kind = models.ForeignKey(EntityKind, null=True, default=None)
     recipients = models.ManyToManyField(Entity)
     subject = models.CharField(max_length=256)
     from_address = models.CharField(max_length=256, default='')
@@ -139,7 +139,7 @@ class EmailTemplate(models.Model):
 
 class IndividualEmailManager(models.Manager):
     def get_queryset(self):
-        return super(IndividualEmailManager, self).get_queryset().filter(subentity_kind__isnull=True)
+        return super(IndividualEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=True)
 
 
 class IndividualEmail(Email):
@@ -153,7 +153,7 @@ class IndividualEmail(Email):
 
 class GroupEmailManager(models.Manager):
     def get_queryset(self):
-        return super(GroupEmailManager, self).get_queryset().filter(subentity_kind__isnull=False)
+        return super(GroupEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=False)
 
 
 class GroupEmail(Email):

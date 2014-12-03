@@ -40,6 +40,7 @@ setup(
         'django-db-mutex>=0.1.3',
         'django-entity>=1.5.0',
         'django-entity-event>=0.1',
+        'django-entity-subscription>=0.4.1',
         'celery>=3.1',
     ],
     tests_require=[
