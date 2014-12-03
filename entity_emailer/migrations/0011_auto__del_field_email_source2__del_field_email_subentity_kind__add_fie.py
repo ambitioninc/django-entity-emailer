@@ -8,13 +8,12 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Deleting field 'Email.source'
-        db.delete_column(u'entity_emailer_email', 'source_id')
-
         db.rename_column(u'entity_emailer_email', 'source2_id', 'source_id')
+        db.rename_column(u'entity_emailer_email', 'subentity_kind_id', 'sub_entity_kind_id')
 
     def backwards(self, orm):
-        raise RuntimeError
+        db.rename_column(u'entity_emailer_email', 'source_id', 'source2_id')
+        db.rename_column(u'entity_emailer_email', 'sub_entity_kind_id', 'subentity_kind_id')
 
     models = {
         u'contenttypes.contenttype': {
@@ -49,7 +48,7 @@ class Migration(SchemaMigration):
             'scheduled': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.utcnow', 'null': 'True'}),
             'sent': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True'}),
             'source': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_event.Source']"}),
-            'subentity_kind': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': u"orm['entity.EntityKind']", 'null': 'True'}),
+            'sub_entity_kind': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': u"orm['entity.EntityKind']", 'null': 'True'}),
             'subject': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
             'template': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_emailer.EmailTemplate']"}),
             'uid': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '100', 'unique': 'True', 'null': 'True'})

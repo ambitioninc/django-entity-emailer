@@ -8,10 +8,26 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        db.rename_column(u'entity_emailer_email', 'subentity_kind_id', 'sub_entity_kind_id')
+        # Deleting field 'Email.source'
+        db.delete_column(u'entity_emailer_email', 'source_id')
+
+
+        # Changing field 'Email.source2'
+        db.alter_column(u'entity_emailer_email', 'source2_id', self.gf('django.db.models.fields.related.ForeignKey')(default=0, to=orm['entity_event.Source']))
 
     def backwards(self, orm):
-        db.rename_column(u'entity_emailer_email', 'sub_entity_kind_id', 'subentity_kind_id')
+
+        # User chose to not deal with backwards NULL issues for 'Email.source'
+        raise RuntimeError("Cannot reverse this migration. 'Email.source' and its values cannot be restored.")
+        
+        # The following code is provided here to aid in writing a correct migration        # Adding field 'Email.source'
+        db.add_column(u'entity_emailer_email', 'source',
+                      self.gf('django.db.models.fields.related.ForeignKey')(to=orm['entity_subscription.Source']),
+                      keep_default=False)
+
+
+        # Changing field 'Email.source2'
+        db.alter_column(u'entity_emailer_email', 'source2_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['entity_event.Source'], null=True))
 
     models = {
         u'contenttypes.contenttype': {
@@ -45,8 +61,8 @@ class Migration(SchemaMigration):
             'recipients': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['entity.Entity']", 'symmetrical': 'False'}),
             'scheduled': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.utcnow', 'null': 'True'}),
             'sent': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True'}),
-            'source': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_event.Source']"}),
-            'sub_entity_kind': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': u"orm['entity.EntityKind']", 'null': 'True'}),
+            'source2': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_event.Source']"}),
+            'subentity_kind': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': u"orm['entity.EntityKind']", 'null': 'True'}),
             'subject': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
             'template': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_emailer.EmailTemplate']"}),
             'uid': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '100', 'unique': 'True', 'null': 'True'})
