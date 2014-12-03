@@ -36,7 +36,7 @@ setup(
     ],
     license='MIT',
     install_requires=[
-        'django>=1.6',
+        'django>=1.6,<1.7',
         'django-db-mutex>=0.1.3',
         'django-entity>=1.5.0',
         'django-entity-subscription>=0.4.1',

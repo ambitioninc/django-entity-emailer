@@ -355,6 +355,7 @@ The possible fields on ``EmailTemplate`` are:
 - ``html_template_path`` - A path to a template for an html email.
 - ``text_template`` - A TextField for inputing a text email template directly.
 - ``html_template`` - A TextField for inputing an html email template directly.
+- ``context_loader`` - An optional function path for loading the email context.
 
 Both a text and html template may be provided, either through a path
 to the template, or a raw template object. However, for either text or
@@ -365,13 +366,32 @@ and ``html_template`` are missing, if ``text_template_path`` and
 ``text_template`` are both provided, or if ``html_template_path`` and
 ``html_template`` are both provided, a ``ValidationError`` will be raised.
 
+If a ``context_loader`` path to a function is provided, the serialized context
+of the email will be passed through this function. This provides the ability
+for the function to fetch other non-serializable attributes about the context
+and pass them along before rendering.
+
 The email sending task will take care of rendering the template,
 and creating a text or text/html message based on the rendered
 template.
 
 
+Showing Emails in the Browser
+-----------------------------
+
+Users may view emails in a browser with this application. This is accomplished by including
+the ``entity_emailer`` urls into the Django project and providing the PK of the email as the url argument.
+The url view will use the text/html templates of the email to render it as a web page.
+
+
 Release Notes
 -------------
+
+* 0.5
+
+    * Added a ``context_loader`` field on the ``EmailTemplate`` model. This function allows a user to provide a function
+        path that for fetching and returning data from the stored ``Email`` context.
+    * Added a basic ``EmailView`` and urls for rendering emails through a Django view.
 
 * 0.4
 
