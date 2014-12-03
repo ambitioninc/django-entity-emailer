@@ -52,6 +52,28 @@ class ConvertEventsToEmailsTest(TestCase):
         self.assertEquals(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
+    def test_basic_only_following_false_subscription_marked_seen(self):
+        source = G(Source)
+        e = G(Entity)
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=False, sub_entity_kind=None)
+        G(EmailTemplate, template_name='template', text_template_path='path')
+        email_context = {
+            'entity_emailer_template': 'template',
+            'entity_emailer_subject': 'hi',
+        }
+        event = G(Event, source=source, context=email_context)
+        G(EventActor, event=event, entity=e)
+
+        tasks.convert_events_to_emails()
+        tasks.convert_events_to_emails()
+
+        email = Email.objects.get()
+        self.assertEquals(list(email.recipients.all()), [e])
+        self.assertEquals(email.context, email_context)
+        self.assertEquals(email.subject, 'hi')
+        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+
+    @freeze_time('2013-1-2')
     def test_basic_only_following_true_subscription(self):
         source = G(Source)
         e = G(Entity)

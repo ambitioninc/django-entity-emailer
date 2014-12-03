@@ -147,8 +147,7 @@ def convert_events_to_emails():
     """
     email_medium = get_medium()
 
-    for event, targets in email_medium.events_targets(seen=False):
-        print 'event', event
+    for event, targets in email_medium.events_targets(seen=False, mark_seen=True):
         try:
             template_name = event.context.get('entity_emailer_template', '')
             template = EmailTemplate.objects.get(template_name=template_name)
@@ -156,10 +155,8 @@ def convert_events_to_emails():
             err = 'Event does not have a template or the template does not exist. Context: {context}'
             LOG.error(err.format(note=event, context=event.context))
             # If we can't find a template, skip creating this email.
-            print 'err'
             continue
 
-        print 'event', event, 'target', targets
         Email.objects.create_email(
             source=event.source, recipients=targets, template=template, context=event.context,
             subject=event.context.get('entity_emailer_subject', 'Email'))
