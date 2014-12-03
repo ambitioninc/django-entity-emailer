@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.db import models
 from django.utils.module_loading import import_by_path
 from entity.models import Entity, EntityKind
-from entity_subscription.models import Source
+from entity_event.models import Source
 from jsonfield import JSONField
 
 
