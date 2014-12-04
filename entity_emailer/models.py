@@ -1,8 +1,7 @@
 from datetime import datetime
 
-from django.core.exceptions import ValidationError, ImproperlyConfigured
+from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils.module_loading import import_by_path
 from entity.models import Entity, EntityKind
 from entity_event.models import Source
 from jsonfield import JSONField
@@ -71,10 +70,7 @@ class Email(models.Model):
         Retrieves the context for this email, passing it through the context loader of
         the email template if necessary.
         """
-        if self.template.context_loader:
-            return self.template.get_context_loader_function()(self.context)
-        else:
-            return self.context
+        return self.source.get_context(self.context)
 
 
 class EmailTemplate(models.Model):
@@ -104,13 +100,6 @@ class EmailTemplate(models.Model):
     html_template_path = models.CharField(max_length=256, default='')
     text_template = models.TextField(default='')
     html_template = models.TextField(default='')
-    context_loader = models.CharField(max_length=256, default='', blank=True)
-
-    def get_context_loader_function(self):
-        """
-        Returns an imported, callable context loader function.
-        """
-        return import_by_path(self.context_loader)
 
     def clean(self):
         template_fields = [
@@ -123,11 +112,6 @@ class EmailTemplate(models.Model):
             raise ValidationError('Cannot provide a template path and template')
         if self.html_template_path and self.html_template:
             raise ValidationError('Cannot provide a template path and template')
-        if self.context_loader:
-            try:
-                self.get_context_loader_function()
-            except ImproperlyConfigured:
-                raise ValidationError('Must provide a loadable context loader')
 
     def save(self, *args, **kwargs):
         self.clean()

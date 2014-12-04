@@ -4,7 +4,7 @@ from django.core import mail
 from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
-from django_dynamic_fixture import G, N
+from django_dynamic_fixture import G, N, F
 from entity.models import Entity, EntityRelationship, EntityKind
 from entity_event.models import (
     Medium, Source, Subscription, Unsubscription, Event, EventActor
@@ -527,11 +527,10 @@ class RenderTemplatesTest(TestCase):
     def test_html_path_with_context_loader(self, open_mock):
         temp = '<html>Hi {{ entity }}</html>'
         open_mock.return_value.__enter__.return_value.read.return_value = temp
-        template = G(
-            EmailTemplate, html_template_path='NotNothing',
-            context_loader='entity_emailer.tests.test_tasks.render_template_context_loader')
         person = G(Entity, display_name='Swansonbot')
-        email = N(Email, template=template, context={'entity': person.id})
+        email = N(
+            Email, source=F(context_loader='entity_emailer.tests.test_tasks.render_template_context_loader'),
+            template=F(html_template_path='NotNothing'), context={'entity': person.id})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
         self.assertEqual(rendered_html, '<html>Hi Swansonbot</html>')
