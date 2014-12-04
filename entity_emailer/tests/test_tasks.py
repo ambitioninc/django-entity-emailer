@@ -26,6 +26,21 @@ class ConvertEventsToEmailsTest(TestCase):
         tasks.ConvertEventsToEmails().run()
         mock_convert_events_to_emails.assert_called_once_with()
 
+    def test_invalid_template(self):
+        source = G(Source)
+        e = G(Entity)
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=False, sub_entity_kind=None)
+        email_context = {
+            'entity_emailer_template': 'invalid_template',
+            'entity_emailer_subject': 'hi',
+        }
+        event = G(Event, source=source, context=email_context)
+        G(EventActor, event=event, entity=e)
+
+        tasks.convert_events_to_emails()
+
+        self.assertFalse(Email.objects.exists())
+
     def test_no_events(self):
         tasks.convert_events_to_emails()
         self.assertFalse(Email.objects.exists())

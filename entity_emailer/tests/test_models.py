@@ -1,14 +1,73 @@
+from datetime import datetime
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase, SimpleTestCase
 from django_dynamic_fixture import G, N
-from entity.models import EntityKind
+from entity.models import EntityKind, Entity
 from entity_event.models import Source
+from freezegun import freeze_time
 
 from entity_emailer.models import Email, EmailTemplate, IndividualEmail, GroupEmail
 
 
 def basic_context_loader(context):
     return {'hello': 'hello'}
+
+
+class EmailManagerCreateEmailTest(TestCase):
+    @freeze_time('2013-2-3')
+    def test_w_recipients_scheduled_time(self):
+        source = G(Source)
+        e1 = G(Entity)
+        e2 = G(Entity)
+        template = G(EmailTemplate, text_template_path='path')
+        e = Email.objects.create_email(
+            scheduled=datetime(2013, 4, 5), source=source, recipients=[e1, e2],
+            subject='hi', from_address='hi@hi.com', template=template,
+            context={'hi': 'hi'}, uid='hi')
+        self.assertEqual(e.scheduled, datetime(2013, 4, 5))
+        self.assertEqual(e.source, source)
+        self.assertEqual(set(e.recipients.all()), set([e1, e2]))
+        self.assertEqual(e.subject, 'hi')
+        self.assertEqual(e.from_address, 'hi@hi.com')
+        self.assertEqual(e.template, template)
+        self.assertEqual(e.context, {'hi': 'hi'})
+        self.assertEqual(e.uid, 'hi')
+
+    @freeze_time('2013-2-3')
+    def test_w_recipients_no_scheduled_time(self):
+        source = G(Source)
+        e1 = G(Entity)
+        e2 = G(Entity)
+        template = G(EmailTemplate, text_template_path='path')
+        e = Email.objects.create_email(
+            source=source, recipients=[e1, e2],
+            subject='hi', from_address='hi@hi.com', template=template,
+            context={'hi': 'hi'}, uid='hi')
+        self.assertEqual(e.scheduled, datetime(2013, 2, 3))
+        self.assertEqual(e.source, source)
+        self.assertEqual(set(e.recipients.all()), set([e1, e2]))
+        self.assertEqual(e.subject, 'hi')
+        self.assertEqual(e.from_address, 'hi@hi.com')
+        self.assertEqual(e.template, template)
+        self.assertEqual(e.context, {'hi': 'hi'})
+        self.assertEqual(e.uid, 'hi')
+
+    @freeze_time('2013-2-3')
+    def test_w_recipients_no_scheduled_time_no_recipients_no_uid(self):
+        source = G(Source)
+        template = G(EmailTemplate, text_template_path='path')
+        e = Email.objects.create_email(
+            source=source, subject='hi', from_address='hi@hi.com', template=template,
+            context={'hi': 'hi'})
+        self.assertEqual(e.scheduled, datetime(2013, 2, 3))
+        self.assertEqual(e.source, source)
+        self.assertEqual(list(e.recipients.all()), [])
+        self.assertEqual(e.subject, 'hi')
+        self.assertEqual(e.from_address, 'hi@hi.com')
+        self.assertEqual(e.template, template)
+        self.assertEqual(e.context, {'hi': 'hi'})
+        self.assertIsNone(e.uid)
 
 
 class EmailTemplateCleanTest(SimpleTestCase):
