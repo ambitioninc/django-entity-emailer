@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 from django.db import models
 from entity.models import Entity, EntityKind
 from entity_event.models import Source
@@ -68,9 +69,11 @@ class Email(models.Model):
     def get_context(self):
         """
         Retrieves the context for this email, passing it through the context loader of
-        the email template if necessary.
+        the email template if necessary. It also adds the email url address to the context.
         """
-        return self.source.get_context(self.context)
+        context = self.source.get_context(self.context)
+        context['entity_emailer_url'] = reverse('entity_emailer.email', args=[self.id])
+        return context
 
 
 class EmailTemplate(models.Model):

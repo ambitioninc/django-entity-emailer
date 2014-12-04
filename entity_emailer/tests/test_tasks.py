@@ -494,21 +494,21 @@ class RenderTemplatesTest(TestCase):
     def test_text_path(self, open_mock):
         open_mock.return_value.__enter__.return_value.read.return_value = 'Hi {{ name }}'
         template = G(EmailTemplate, text_template_path='NotNothing')
-        email = N(Email, template=template, context={'name': 'Mr. T'})
+        email = N(Email, id=2, template=template, context={'name': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, 'Hi Mr. T')
         self.assertEqual(rendered_html, '')
 
     def test_text_textfield(self):
         template = G(EmailTemplate, text_template='Hi {{ name }}')
-        email = N(Email, template=template, context={'name': 'Mr. T'})
+        email = N(Email, id=2, template=template, context={'name': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, 'Hi Mr. T')
         self.assertEqual(rendered_html, '')
 
     def test_html_path_on_disk(self):
         template = G(EmailTemplate, html_template_path='hi_template.html')
-        email = N(Email, template=template, context={'entity': 'Mr. T'})
+        email = N(Email, id=2, template=template, context={'entity': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
         self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')
@@ -518,7 +518,7 @@ class RenderTemplatesTest(TestCase):
         temp = '<html>Hi {{ name }}</html>'
         open_mock.return_value.__enter__.return_value.read.return_value = temp
         template = G(EmailTemplate, html_template_path='NotNothing')
-        email = N(Email, template=template, context={'name': 'Mr. T'})
+        email = N(Email, id=2, template=template, context={'name': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
         self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')
@@ -529,7 +529,7 @@ class RenderTemplatesTest(TestCase):
         open_mock.return_value.__enter__.return_value.read.return_value = temp
         person = G(Entity, display_name='Swansonbot')
         email = N(
-            Email, source=F(context_loader='entity_emailer.tests.test_tasks.render_template_context_loader'),
+            Email, id=2, source=F(context_loader='entity_emailer.tests.test_tasks.render_template_context_loader'),
             template=F(html_template_path='NotNothing'), context={'entity': person.id})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
@@ -538,7 +538,7 @@ class RenderTemplatesTest(TestCase):
     def test_test_textfield(self):
         temp = '<html>Hi {{ name }}</html>'
         template = G(EmailTemplate, html_template=temp)
-        email = N(Email, template=template, context={'name': 'Mr. T'})
+        email = N(Email, id=2, template=template, context={'name': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
         self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')

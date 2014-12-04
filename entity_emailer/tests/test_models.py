@@ -57,14 +57,20 @@ class EmailTemplateUnicodeTest(TestCase):
 class EmailGetContext(SimpleTestCase):
     def test_without_context_loader(self):
         email = N(
-            Email, context={'hi': 'hi'}, persist_dependencies=False, source=N(
+            Email, id=2, context={'hi': 'hi'}, persist_dependencies=False, source=N(
                 Source, context_loader='entity_emailer.tests.test_models.basic_context_loader',
                 persist_dependencies=False))
-        self.assertEqual(email.get_context(), {'hello': 'hello'})
+        self.assertEqual(email.get_context(), {
+            'hello': 'hello',
+            'entity_emailer_url': '/2/',
+        })
 
     def test_with_context_loader(self):
-        email = N(Email, context={'hi': 'hi'}, persist_dependencies=False)
-        self.assertEqual(email.get_context(), {'hi': 'hi'})
+        email = N(Email, id=3, context={'hi': 'hi'}, persist_dependencies=False)
+        self.assertEqual(email.get_context(), {
+            'hi': 'hi',
+            'entity_emailer_url': '/3/',
+        })
 
 
 class IndividualEmailManagerTest(TestCase):
