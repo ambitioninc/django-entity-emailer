@@ -1,6 +1,6 @@
 from django.core.management import call_command
 from django.test import TestCase
-from entity_subscription.models import Medium, Source
+from entity_event.models import Medium, Source
 
 from entity_emailer import get_medium, get_admin_source, get_admin_template
 from entity_emailer.models import EmailTemplate

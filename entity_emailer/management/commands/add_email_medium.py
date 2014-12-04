@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.management import BaseCommand
-from entity_subscription.models import Medium
+from entity_event.models import Medium
 
 
 class Command(BaseCommand):

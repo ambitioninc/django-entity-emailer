@@ -4,7 +4,7 @@ from django.contrib.admin.sites import AdminSite
 from django.test import TestCase
 from django_dynamic_fixture import G, F
 from entity.models import Entity, EntityRelationship, EntityKind
-from entity_subscription.models import Source
+from entity_event.models import Source
 
 from entity_emailer import admin
 from entity_emailer.models import Email, EmailTemplate, GroupEmail, IndividualEmail
@@ -21,7 +21,7 @@ class SubentityContentTypeQsTest(TestCase):
         G(EntityRelationship, sub_entity=sub_entity_1, super_entity=super_entity)
         G(EntityRelationship, sub_entity=sub_entity_2, super_entity=super_entity)
 
-    def test_returns_subentity_kinds(self):
+    def test_returns_sub_entity_kinds(self):
         self.assertIn(self.sub_entity_kind_1, list(EntityKind.objects.all()))
         self.assertIn(self.sub_entity_kind_2, list(EntityKind.objects.all()))
 
@@ -147,8 +147,8 @@ class GroupEmailAdminTest(TestCase):
     def test_get_queryset_filters_non_admin(self):
         admin_template = G(EmailTemplate, template_name='html_safe', text_template="...")
         other_template = G(EmailTemplate, template_name='other', text_template="...")
-        G(Email, template=admin_template, context={}, subentity_kind=self.ek)
-        G(Email, template=other_template, context={}, subentity_kind=self.ek)
+        G(Email, template=admin_template, context={}, sub_entity_kind=self.ek)
+        G(Email, template=other_template, context={}, sub_entity_kind=self.ek)
         email_admin = admin.GroupEmailAdmin(GroupEmail, self.site)
         qs = email_admin.get_queryset(None)
         self.assertEqual(qs.count(), 1)

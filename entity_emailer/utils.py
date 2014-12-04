@@ -1,5 +1,5 @@
 from django.conf import settings
-from entity_subscription.models import Medium, Source
+from entity_event.models import Medium, Source
 
 from entity_emailer.models import EmailTemplate
 

@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from django.core.exceptions import ValidationError, ImproperlyConfigured
+from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 from django.db import models
-from django.utils.module_loading import import_by_path
 from entity.models import Entity, EntityKind
-from entity_subscription.models import Source
+from entity_event.models import Source
 from jsonfield import JSONField
 
 
@@ -50,7 +50,7 @@ class Email(models.Model):
     from emails of that source.
     """
     source = models.ForeignKey(Source)
-    subentity_kind = models.ForeignKey(EntityKind, null=True, default=None)
+    sub_entity_kind = models.ForeignKey(EntityKind, null=True, default=None)
     recipients = models.ManyToManyField(Entity)
     subject = models.CharField(max_length=256)
     from_address = models.CharField(max_length=256, default='')
@@ -69,12 +69,11 @@ class Email(models.Model):
     def get_context(self):
         """
         Retrieves the context for this email, passing it through the context loader of
-        the email template if necessary.
+        the email template if necessary. It also adds the email url address to the context.
         """
-        if self.template.context_loader:
-            return self.template.get_context_loader_function()(self.context)
-        else:
-            return self.context
+        context = self.source.get_context(self.context)
+        context['entity_emailer_url'] = reverse('entity_emailer.email', args=[self.id])
+        return context
 
 
 class EmailTemplate(models.Model):
@@ -104,13 +103,6 @@ class EmailTemplate(models.Model):
     html_template_path = models.CharField(max_length=256, default='')
     text_template = models.TextField(default='')
     html_template = models.TextField(default='')
-    context_loader = models.CharField(max_length=256, default='', blank=True)
-
-    def get_context_loader_function(self):
-        """
-        Returns an imported, callable context loader function.
-        """
-        return import_by_path(self.context_loader)
 
     def clean(self):
         template_fields = [
@@ -123,11 +115,6 @@ class EmailTemplate(models.Model):
             raise ValidationError('Cannot provide a template path and template')
         if self.html_template_path and self.html_template:
             raise ValidationError('Cannot provide a template path and template')
-        if self.context_loader:
-            try:
-                self.get_context_loader_function()
-            except ImproperlyConfigured:
-                raise ValidationError('Must provide a loadable context loader')
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -139,7 +126,7 @@ class EmailTemplate(models.Model):
 
 class IndividualEmailManager(models.Manager):
     def get_queryset(self):
-        return super(IndividualEmailManager, self).get_queryset().filter(subentity_kind__isnull=True)
+        return super(IndividualEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=True)
 
 
 class IndividualEmail(Email):
@@ -153,7 +140,7 @@ class IndividualEmail(Email):
 
 class GroupEmailManager(models.Manager):
     def get_queryset(self):
-        return super(GroupEmailManager, self).get_queryset().filter(subentity_kind__isnull=False)
+        return super(GroupEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=False)
 
 
 class GroupEmail(Email):

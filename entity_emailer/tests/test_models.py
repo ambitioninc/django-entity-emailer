@@ -1,57 +1,73 @@
 from datetime import datetime
 
-from django.core.exceptions import ValidationError, ImproperlyConfigured
+from django.core.exceptions import ValidationError
 from django.test import TestCase, SimpleTestCase
 from django_dynamic_fixture import G, N
 from entity.models import EntityKind, Entity
-from entity_subscription.models import Source
+from entity_event.models import Source
 from freezegun import freeze_time
 
 from entity_emailer.models import Email, EmailTemplate, IndividualEmail, GroupEmail
-
-
-class EmailManagerTest(TestCase):
-    @freeze_time('2014-12-2')
-    def test_create_email_no_scheduled_time(self):
-        email = Email.objects.create_email(
-            source=G(Source), template=G(EmailTemplate, text_template_path='hi'), context={})
-        self.assertEqual(email.scheduled, datetime(2014, 12, 2))
-
-    def test_create_email_w_scheduled_time_set_to_none(self):
-        email = Email.objects.create_email(
-            source=G(Source), template=G(EmailTemplate, text_template_path='hi'), context={},
-            scheduled=None)
-        self.assertIsNone(email.scheduled)
-
-    @freeze_time('2014-12-2')
-    def test_create_email_w_scheduled_time_set_to_dt(self):
-        email = Email.objects.create_email(
-            source=G(Source), template=G(EmailTemplate, text_template_path='hi'), context={},
-            scheduled=datetime(2013, 4, 2))
-        self.assertEqual(email.scheduled, datetime(2013, 4, 2))
-
-    def test_w_multiple_recipients(self):
-        recipients = [G(Entity), G(Entity)]
-        email = Email.objects.create_email(
-            source=G(Source), recipients=recipients, template=G(EmailTemplate, text_template_path='hi'), context={},
-            scheduled=datetime(2013, 4, 2))
-        self.assertEqual(set(email.recipients.all()), set(recipients))
 
 
 def basic_context_loader(context):
     return {'hello': 'hello'}
 
 
-class EmailTemplateGetContextLoaderTest(SimpleTestCase):
-    def test_loads_context_loader(self):
-        template = EmailTemplate(context_loader='entity_emailer.tests.test_models.basic_context_loader')
-        loader_func = template.get_context_loader_function()
-        self.assertEqual(loader_func, basic_context_loader)
+class EmailManagerCreateEmailTest(TestCase):
+    @freeze_time('2013-2-3')
+    def test_w_recipients_scheduled_time(self):
+        source = G(Source)
+        e1 = G(Entity)
+        e2 = G(Entity)
+        template = G(EmailTemplate, text_template_path='path')
+        e = Email.objects.create_email(
+            scheduled=datetime(2013, 4, 5), source=source, recipients=[e1, e2],
+            subject='hi', from_address='hi@hi.com', template=template,
+            context={'hi': 'hi'}, uid='hi')
+        self.assertEqual(e.scheduled, datetime(2013, 4, 5))
+        self.assertEqual(e.source, source)
+        self.assertEqual(set(e.recipients.all()), set([e1, e2]))
+        self.assertEqual(e.subject, 'hi')
+        self.assertEqual(e.from_address, 'hi@hi.com')
+        self.assertEqual(e.template, template)
+        self.assertEqual(e.context, {'hi': 'hi'})
+        self.assertEqual(e.uid, 'hi')
 
-    def test_invalid_context_loader(self):
-        template = EmailTemplate(context_loader='entity_emailer.tests.test_models.invalid_context_loader')
-        with self.assertRaises(ImproperlyConfigured):
-            template.get_context_loader_function()
+    @freeze_time('2013-2-3')
+    def test_w_recipients_no_scheduled_time(self):
+        source = G(Source)
+        e1 = G(Entity)
+        e2 = G(Entity)
+        template = G(EmailTemplate, text_template_path='path')
+        e = Email.objects.create_email(
+            source=source, recipients=[e1, e2],
+            subject='hi', from_address='hi@hi.com', template=template,
+            context={'hi': 'hi'}, uid='hi')
+        self.assertEqual(e.scheduled, datetime(2013, 2, 3))
+        self.assertEqual(e.source, source)
+        self.assertEqual(set(e.recipients.all()), set([e1, e2]))
+        self.assertEqual(e.subject, 'hi')
+        self.assertEqual(e.from_address, 'hi@hi.com')
+        self.assertEqual(e.template, template)
+        self.assertEqual(e.context, {'hi': 'hi'})
+        self.assertEqual(e.uid, 'hi')
+
+    @freeze_time('2013-2-3')
+    def test_w_recipients_no_scheduled_time_no_recipients_no_uid(self):
+        source = G(Source)
+        template = G(EmailTemplate, text_template_path='path')
+        e = Email.objects.create_email(
+            source=source, subject='hi', from_address='hi@hi.com', template=template,
+            context={'hi': 'hi'})
+        self.assertEqual(e.scheduled, datetime(2013, 2, 3))
+        self.assertEqual(e.source, source)
+        self.assertEqual(list(e.recipients.all()), [])
+        self.assertEqual(e.subject, 'hi')
+        self.assertEqual(e.from_address, 'hi@hi.com')
+        self.assertEqual(e.template, template)
+        self.assertEqual(e.context, {'hi': 'hi'})
+        self.assertIsNone(e.uid)
 
 
 class EmailTemplateCleanTest(SimpleTestCase):
@@ -62,14 +78,6 @@ class EmailTemplateCleanTest(SimpleTestCase):
         )
         template.clean()
         self.assertTrue(template)
-
-    def test_invalid_context_path_does_not_validate(self):
-        with self.assertRaises(ValidationError):
-            EmailTemplate(
-                template_name='test',
-                text_template_path='test/path',
-                context_loader='invalid_path',
-            ).clean()
 
     def test_no_template_does_not_validate(self):
         with self.assertRaises(ValidationError):
@@ -108,21 +116,27 @@ class EmailTemplateUnicodeTest(TestCase):
 class EmailGetContext(SimpleTestCase):
     def test_without_context_loader(self):
         email = N(
-            Email, context={'hi': 'hi'}, persist_dependencies=False, template=N(
-                EmailTemplate, context_loader='entity_emailer.tests.test_models.basic_context_loader',
+            Email, id=2, context={'hi': 'hi'}, persist_dependencies=False, source=N(
+                Source, context_loader='entity_emailer.tests.test_models.basic_context_loader',
                 persist_dependencies=False))
-        self.assertEqual(email.get_context(), {'hello': 'hello'})
+        self.assertEqual(email.get_context(), {
+            'hello': 'hello',
+            'entity_emailer_url': '/2/',
+        })
 
     def test_with_context_loader(self):
-        email = N(Email, context={'hi': 'hi'}, persist_dependencies=False)
-        self.assertEqual(email.get_context(), {'hi': 'hi'})
+        email = N(Email, id=3, context={'hi': 'hi'}, persist_dependencies=False)
+        self.assertEqual(email.get_context(), {
+            'hi': 'hi',
+            'entity_emailer_url': '/3/',
+        })
 
 
 class IndividualEmailManagerTest(TestCase):
     def setUp(self):
         ek = G(EntityKind)
         temp = G(EmailTemplate, text_template='...')
-        self.group_email = G(Email, template=temp, subentity_kind=ek, context={})
+        self.group_email = G(Email, template=temp, sub_entity_kind=ek, context={})
         self.individual_email = G(Email, template=temp, subentity_type=None, context={})
 
     def test_get_queryset_excludes_groups(self):
@@ -138,8 +152,8 @@ class GroupEmailManagerTest(TestCase):
     def setUp(self):
         ek = G(EntityKind)
         temp = G(EmailTemplate, text_template='...')
-        self.group_email = G(Email, template=temp, subentity_kind=ek, context={})
-        self.individual_email = G(Email, template=temp, subentity_kind=None, context={})
+        self.group_email = G(Email, template=temp, sub_entity_kind=ek, context={})
+        self.individual_email = G(Email, template=temp, sub_entity_kind=None, context={})
 
     def test_get_queryset_excludes_individuals(self):
         qs = GroupEmail.objects.get_queryset()
