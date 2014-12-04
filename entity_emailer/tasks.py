@@ -7,7 +7,6 @@ from django.conf import settings
 from django.core import mail
 from django.template.loader import render_to_string
 from django.template import Context, Template
-from entity_event.models import Subscription
 
 from entity_emailer.models import Email, EmailTemplate
 from entity_emailer import get_medium
@@ -97,9 +96,7 @@ def get_subscribed_email_addresses(email):
     else:
         all_entities = list(email.recipients.all())
 
-    send_to = Subscription.objects.filter_not_subscribed(
-        source=email.source, medium=email_medium, entities=all_entities
-    ) if all_entities else []
+    send_to = email_medium.filter_source_targets_by_unsubscription(email.source_id, all_entities)
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
 
