@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django_dynamic_fixture import G
-from entity_subscription.models import Medium, Source
+from entity_event.models import Medium, Source
 
 from entity_emailer.models import EmailTemplate
 from entity_emailer.utils import get_medium, get_admin_source, get_admin_template

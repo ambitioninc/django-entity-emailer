@@ -31,14 +31,14 @@ class CreateGroupEmailForm(forms.ModelForm):
     subject = forms.CharField(max_length=128, widget=forms.TextInput(attrs={'size': '80'}))
     from_email = forms.EmailField(widget=forms.TextInput(attrs={'size': '80'}))
     to_entity = forms.ModelChoiceField(queryset=get_all_super_entities_qs())
-    subentity_kind = forms.ModelChoiceField(queryset=EntityKind.objects.all(), required=False)
+    sub_entity_kind = forms.ModelChoiceField(queryset=EntityKind.objects.all(), required=False)
     body = forms.CharField(widget=forms.Textarea(attrs={'rows': '10', 'cols': '60'}))
     scheduled_date = forms.DateField(widget=SelectDateWidget(), required=False)
     scheduled_time = forms.TimeField(label="Scheduled time (UTC 24 hr) E.g. 18:25", required=False)
 
     class Meta:
         model = GroupEmail
-        fields = ['subject', 'from_email', 'to_entity', 'subentity_kind', 'body', 'scheduled_date']
+        fields = ['subject', 'from_email', 'to_entity', 'sub_entity_kind', 'body', 'scheduled_date']
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -47,17 +47,17 @@ class CreateGroupEmailForm(forms.ModelForm):
         scheduled_datetime = datetime.combine(scheduled_date, scheduled_time)
         if not (self.cleaned_data['scheduled_date'] and self.cleaned_data['scheduled_time']):
             scheduled_datetime += timedelta(minutes=5)
-        created_email = Email(
+
+        created_email = Email.objects.create_email(
             source=get_admin_source(),
-            send_to=self.cleaned_data['to_entity'],
-            subentity_kind=self.cleaned_data['subentity_kind'],
+            sub_entity_kind=self.cleaned_data['sub_entity_kind'],
             subject=self.cleaned_data['subject'],
             from_address=self.cleaned_data['from_email'],
             template=get_admin_template(),
             context={'html': self.cleaned_data['body']},
-            scheduled=scheduled_datetime
+            scheduled=scheduled_datetime,
+            recipients=[self.cleaned_data['to_entity']]
         )
-        created_email.save()
         return created_email
 
     def save_m2m(self, *args, **kwargs):
@@ -91,29 +91,27 @@ class CreateIndividualEmailForm(forms.ModelForm):
         scheduled_datetime = datetime.combine(scheduled_date, scheduled_time)
         if not (self.cleaned_data['scheduled_date'] and self.cleaned_data['scheduled_time']):
             scheduled_datetime += timedelta(minutes=5)
-        created_emails = []
+
         for entity in self.cleaned_data['to_entities']:
-            created_email = Email(
+            created_email = Email.objects.create_email(
                 source=get_admin_source(),
-                send_to=entity,
-                subentity_kind=None,
+                sub_entity_kind=None,
                 subject=self.cleaned_data['subject'],
                 from_address=self.cleaned_data['from_email'],
                 template=get_admin_template(),
                 context={'html': self.cleaned_data['body']},
                 scheduled=scheduled_datetime,
+                recipients=[entity],
             )
-            created_emails.append(created_email)
-        final_email = created_emails.pop()
-        Email.objects.bulk_create(created_emails)
-        return final_email
+
+        return created_email
 
     def save_m2m(self, *args, **kwargs):
         pass
 
 
 class GroupEmailAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'to', 'subentity_kind', 'scheduled', 'has_been_sent')
+    list_display = ('subject', 'to', 'sub_entity_kind', 'scheduled', 'has_been_sent')
     form = CreateGroupEmailForm
 
     def get_queryset(self, request):
@@ -124,7 +122,7 @@ class GroupEmailAdmin(admin.ModelAdmin):
         return (obj.sent is not None)
 
     def to(self, obj):
-        send_to_entity = obj.send_to
+        send_to_entity = obj.recipients.first()
         return unicode(send_to_entity)
 
 
@@ -140,18 +138,18 @@ class IndividualEmailAdmin(admin.ModelAdmin):
         return (obj.sent is not None)
 
     def to(self, obj):
-        send_to_entity = obj.send_to
+        send_to_entity = obj.recipients.first()
         return unicode(send_to_entity)
 
 
 class EmailAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'to', 'subentity_kind', 'scheduled', 'has_been_sent')
+    list_display = ('subject', 'to', 'sub_entity_kind', 'scheduled', 'has_been_sent')
 
     def has_been_sent(self, obj):
         return (obj.sent is not None)
 
     def to(self, obj):
-        send_to_entity = obj.send_to
+        send_to_entity = obj.recipients.first()
         return unicode(send_to_entity)
 
 

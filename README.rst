@@ -212,9 +212,9 @@ field.
 
     send_to_entity = Entity.objects.get_for_obj(some_user_with_an_email)
 
-    Email.objects.create(
+    Email.objects.create_email(
         source=marketing_source,
-        send_to=send_to_entity,
+        recipients=[send_to_entity],
         subject='This is a great offer!',
         template=new_item_template,
         context={'item': 'new car', 'value': '$35,000'}
@@ -226,8 +226,8 @@ By saving this field, an email will be sent to the email stored in
 Email an individual
 ```````````````````
 
-As seen in the example above, emailing an individual is as simple as
-specifying the appropriate entity in the ``Email.send_to``
+As seen in the example above, emailing an individual or individuals is as simple as
+specifying the appropriate entities in the ``Email.recipients``
 field. Additionally, because django-entity supports super-entity and
 sub-entity relationships, it is very easy to send emails to groups of
 individuals.
@@ -243,13 +243,13 @@ simple as saving an instance of ``Email``.
 There are two changes we make from the example for sending to an
 individual.
 
-First, the ``sent_to`` field is still an entity, but instead of an
-entity with an ``entity_meta['email']`` value, it should be an entity
-that has a super-entity relationship to the entities the emails are to
+First, the ``recipients`` field is still a list of entity, but instead of
+entities with an ``entity_meta['email']`` value, they should be entities
+that have a super-entity relationship to the entities the emails are to
 be sent to.
 
 Second, a ``subentity_kind`` field specifies what kind of subentity we
-want to email. All sub-entities of the ``send_to`` entity and of the kind
+want to email. All sub-entities of the ``recipients`` entity list and of the kind
 specified by ``subentity_kind`` must have an 'email' set in their
 ``entity_meta``.
 
@@ -267,11 +267,11 @@ A complete example is below:
     marketing_news_today = Newsletter.objects.get(name='Marketing News Today')
     send_to_entity = Entity.objects.get_for_obj(marketing_news_today)
 
-    Email.objects.create(
+    Email.objects.create_email(
         source=marketing_source,
         # our send_to_entity, is a newsletter, a super-entity of
         # NewsletterSubscribers
-        send_to=send_to_entity,
+        recipients=[send_to_entity],
         # Below is our subentity kind, 'newslettersubscribers'
         subentity_kind=EntityKind.objects.get('newslettersubscribers'),
         subject='This is a great offer!',
@@ -285,6 +285,9 @@ of the sub-entities of the ``marketing_news_today`` entity automatically.
 This allows you to email any group of users that exists in your django
 application without having to write custom ORM queries to pull that
 group out of the database and organize their email addresses.
+
+Note that adding more groups of entities is as simple as adding them to the
+recipients list in the above example.
 
 
 Send An Email at a Scheduled Time
@@ -301,9 +304,9 @@ provide a value for the ``scheduled`` field.
     from datetime import datetime
     from entity.models import EntityKind
 
-    Email.objects.create(
+    Email.objects.create_email(
         source=marketing_source,
-        send_to=send_to_entity,
+        recipients=[send_to_entity],
         subentity_kind=EntityKind.objects.get(name='newslettersubscribers'),
         subject='This is a great offer!',
         template=new_item_template,
@@ -355,6 +358,7 @@ The possible fields on ``EmailTemplate`` are:
 - ``html_template_path`` - A path to a template for an html email.
 - ``text_template`` - A TextField for inputing a text email template directly.
 - ``html_template`` - A TextField for inputing an html email template directly.
+- ``context_loader`` - An optional function path for loading the email context.
 
 Both a text and html template may be provided, either through a path
 to the template, or a raw template object. However, for either text or
@@ -365,13 +369,37 @@ and ``html_template`` are missing, if ``text_template_path`` and
 ``text_template`` are both provided, or if ``html_template_path`` and
 ``html_template`` are both provided, a ``ValidationError`` will be raised.
 
+If a ``context_loader`` path to a function is provided, the serialized context
+of the email will be passed through this function. This provides the ability
+for the function to fetch other non-serializable attributes about the context
+and pass them along before rendering.
+
 The email sending task will take care of rendering the template,
 and creating a text or text/html message based on the rendered
 template.
 
 
+Showing Emails in the Browser
+-----------------------------
+
+Users may view emails in a browser with this application. This is accomplished by including
+the ``entity_emailer`` urls into the Django project and providing the PK of the email as the url argument.
+The url view will use the text/html templates of the email to render it as a web page.
+
+
 Release Notes
 -------------
+
+* 0.6
+
+    * Added a ``recipients`` field to the ``Email`` model and removed the ``send_to`` field. This allows the user
+        to provide more than one receiver (or group of receivers) for the email.
+
+* 0.5
+
+    * Added a ``context_loader`` field on the ``EmailTemplate`` model. This function allows a user to provide a function
+        path that for fetching and returning data from the stored ``Email`` context.
+    * Added a basic ``EmailView`` and urls for rendering emails through a Django view.
 
 * 0.4
 

@@ -1,9 +1,32 @@
 from datetime import datetime
+
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 from django.db import models
 from entity.models import Entity, EntityKind
-from entity_subscription.models import Source
+from entity_event.models import Source
 from jsonfield import JSONField
+
+
+class EmailManager(models.Manager):
+    """
+    Provides the ability to easily create emails with the recipients.
+    """
+    def create_email(self, recipients=None, **kwargs):
+        """
+        Note that we pop the scheduled time from the kwargs before creating the email
+        and then update the scheduled time after the recipients have been added. This
+        avoids the potential race condition of the email being created before it is
+        picked up by a task that sends it.
+        """
+        scheduled = kwargs.pop('scheduled', datetime.utcnow())
+        email = Email.objects.create(scheduled=None, **kwargs)
+        if recipients:
+            email.recipients.add(*recipients)
+
+        email.scheduled = scheduled
+        email.save()
+        return email
 
 
 class Email(models.Model):
@@ -17,7 +40,8 @@ class Email(models.Model):
 
     Emails can be sent to an individual, by setting subentities to
     False, or to a group, by setting send_to to a superentity, like a
-    Team or Organization, and setting subentities to True.
+    Team or Organization, and setting subentities to True. This applies
+    to every entity in the recipients list.
 
     Sending an email happens automatically, and consists of rendering
     the given template with the given context.
@@ -26,8 +50,8 @@ class Email(models.Model):
     from emails of that source.
     """
     source = models.ForeignKey(Source)
-    send_to = models.ForeignKey(Entity)
-    subentity_kind = models.ForeignKey(EntityKind, null=True, default=None)
+    sub_entity_kind = models.ForeignKey(EntityKind, null=True, default=None)
+    recipients = models.ManyToManyField(Entity)
     subject = models.CharField(max_length=256)
     from_address = models.CharField(max_length=256, default='')
     template = models.ForeignKey('EmailTemplate')
@@ -39,6 +63,17 @@ class Email(models.Model):
     # time in the future), which would not be possible with an auto_add_now=True.
     scheduled = models.DateTimeField(null=True, default=datetime.utcnow)
     sent = models.DateTimeField(null=True, default=None)
+
+    objects = EmailManager()
+
+    def get_context(self):
+        """
+        Retrieves the context for this email, passing it through the context loader of
+        the email template if necessary. It also adds the email url address to the context.
+        """
+        context = self.source.get_context(self.context)
+        context['entity_emailer_url'] = reverse('entity_emailer.email', args=[self.id])
+        return context
 
 
 class EmailTemplate(models.Model):
@@ -53,6 +88,11 @@ class EmailTemplate(models.Model):
 
     However, for either text or html templates, both a path and raw
     template should not be provided.
+
+    For more complex context loading capabilities, provide an executable
+    function for loading the email context. This function accepts the
+    context stored for the email and returns the context again with any
+    other fetched values.
 
     The email sending task will take care of rendering the template,
     and creating a text or text/html message based on the rendered
@@ -86,7 +126,7 @@ class EmailTemplate(models.Model):
 
 class IndividualEmailManager(models.Manager):
     def get_queryset(self):
-        return super(IndividualEmailManager, self).get_queryset().filter(subentity_kind__isnull=True)
+        return super(IndividualEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=True)
 
 
 class IndividualEmail(Email):
@@ -100,7 +140,7 @@ class IndividualEmail(Email):
 
 class GroupEmailManager(models.Manager):
     def get_queryset(self):
-        return super(GroupEmailManager, self).get_queryset().filter(subentity_kind__isnull=False)
+        return super(GroupEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=False)
 
 
 class GroupEmail(Email):
