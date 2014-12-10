@@ -72,7 +72,7 @@ class Email(models.Model):
         the email template if necessary. It also adds the email url address to the context.
         """
         context = self.source.get_context(self.context)
-        context['entity_emailer_url'] = reverse('entity_emailer.email', args=[self.id])
+        context['entity_emailer_id'] = self.id
         return context
 
 
