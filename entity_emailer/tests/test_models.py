@@ -121,14 +121,14 @@ class EmailGetContext(SimpleTestCase):
                 persist_dependencies=False))
         self.assertEqual(email.get_context(), {
             'hello': 'hello',
-            'entity_emailer_url': '/2/',
+            'entity_emailer_id': 2,
         })
 
     def test_with_context_loader(self):
         email = N(Email, id=3, context={'hi': 'hi'}, persist_dependencies=False)
         self.assertEqual(email.get_context(), {
             'hi': 'hi',
-            'entity_emailer_url': '/3/',
+            'entity_emailer_id': 3,
         })
 
 
