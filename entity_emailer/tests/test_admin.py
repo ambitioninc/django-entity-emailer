@@ -8,6 +8,7 @@ from entity_event.models import Source
 
 from entity_emailer import admin
 from entity_emailer.models import Email, EmailTemplate, GroupEmail, IndividualEmail
+from entity_emailer.tests.utils import g_email
 
 
 class SubentityContentTypeQsTest(TestCase):
@@ -140,15 +141,15 @@ class GroupEmailAdminTest(TestCase):
         self.ek = G(EntityKind)
         self.site = AdminSite()
         self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
-        self.email = G(
-            Email, sent=datetime(2014, 1, 1, 12, 34), recipients=[self.entity], context={},
+        self.email = g_email(
+            sent=datetime(2014, 1, 1, 12, 34), recipients=[self.entity], context={},
             template=F(text_template_path='hi'))
 
     def test_get_queryset_filters_non_admin(self):
         admin_template = G(EmailTemplate, template_name='html_safe', text_template="...")
         other_template = G(EmailTemplate, template_name='other', text_template="...")
-        G(Email, template=admin_template, context={}, sub_entity_kind=self.ek)
-        G(Email, template=other_template, context={}, sub_entity_kind=self.ek)
+        g_email(template=admin_template, context={}, sub_entity_kind=self.ek)
+        g_email(template=other_template, context={}, sub_entity_kind=self.ek)
         email_admin = admin.GroupEmailAdmin(GroupEmail, self.site)
         qs = email_admin.get_queryset(None)
         self.assertEqual(qs.count(), 1)
@@ -173,15 +174,15 @@ class IndividualEmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
-        self.email = G(
-            Email, sent=datetime(2014, 1, 1, 12, 34), recipients=[self.entity], context={},
+        self.email = g_email(
+            sent=datetime(2014, 1, 1, 12, 34), recipients=[self.entity], context={},
             template=F(text_template_path='hi'))
 
     def test_get_queryset_filters_non_admin(self):
         admin_template = G(EmailTemplate, template_name='html_safe', text_template="...")
         other_template = G(EmailTemplate, template_name='other', text_template="...")
-        G(Email, template=admin_template, context={})
-        G(Email, template=other_template, context={})
+        g_email(template=admin_template, context={})
+        g_email(template=other_template, context={})
         email_admin = admin.IndividualEmailAdmin(Email, self.site)
         qs = email_admin.get_queryset(None)
         self.assertEqual(qs.count(), 1)
@@ -206,8 +207,8 @@ class EmailAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.entity = G(Entity, entity_meta={'name': 'entity_name'}, display_name='entity_name')
-        self.email = G(
-            Email, sent=datetime(2014, 1, 1, 12, 34), recipients=[self.entity], context={},
+        self.email = g_email(
+            sent=datetime(2014, 1, 1, 12, 34), recipients=[self.entity], context={},
             template=F(text_template_path='hi'))
 
     def test_has_not_been_sent(self):

@@ -383,7 +383,7 @@ Showing Emails in the Browser
 -----------------------------
 
 Users may view emails in a browser with this application. This is accomplished by including
-the ``entity_emailer`` urls into the Django project and providing the PK of the email as the url argument.
+the ``entity_emailer`` urls into the Django project and providing the ``view_uid`` of the email as the url argument.
 The url view will use the text/html templates of the email to render it as a web page.
 
 

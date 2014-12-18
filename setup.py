@@ -41,6 +41,7 @@ setup(
         'django-entity>=1.5.0',
         'django-entity-event>=0.1.1',
         'django-entity-subscription>=0.4.1',
+        'django-uuidfield>=0.5.0',
         'celery>=3.1',
     ],
     tests_require=[
