@@ -8,6 +8,7 @@ from entity_event.models import Source
 from freezegun import freeze_time
 
 from entity_emailer.models import Email, EmailTemplate, IndividualEmail, GroupEmail
+from entity_emailer.tests.utils import n_email, g_email
 
 
 def basic_context_loader(context):
@@ -115,20 +116,20 @@ class EmailTemplateUnicodeTest(TestCase):
 
 class EmailGetContext(SimpleTestCase):
     def test_without_context_loader(self):
-        email = N(
-            Email, id=2, context={'hi': 'hi'}, persist_dependencies=False, source=N(
+        email = n_email(
+            id=2, context={'hi': 'hi'}, view_uid='00001111222233334444555566667777', source=N(
                 Source, context_loader='entity_emailer.tests.test_models.basic_context_loader',
                 persist_dependencies=False))
         self.assertEqual(email.get_context(), {
             'hello': 'hello',
-            'entity_emailer_id': 2,
+            'entity_emailer_id': '00001111222233334444555566667777',
         })
 
     def test_with_context_loader(self):
-        email = N(Email, id=3, context={'hi': 'hi'}, persist_dependencies=False)
+        email = n_email(id=3, context={'hi': 'hi'}, view_uid='00001111222233334444555566667777')
         self.assertEqual(email.get_context(), {
             'hi': 'hi',
-            'entity_emailer_id': 3,
+            'entity_emailer_id': '00001111222233334444555566667777',
         })
 
 
@@ -136,8 +137,8 @@ class IndividualEmailManagerTest(TestCase):
     def setUp(self):
         ek = G(EntityKind)
         temp = G(EmailTemplate, text_template='...')
-        self.group_email = G(Email, template=temp, sub_entity_kind=ek, context={})
-        self.individual_email = G(Email, template=temp, subentity_type=None, context={})
+        self.group_email = g_email(template=temp, sub_entity_kind=ek, context={})
+        self.individual_email = g_email(template=temp, subentity_type=None, context={})
 
     def test_get_queryset_excludes_groups(self):
         qs = IndividualEmail.objects.get_queryset()
@@ -152,8 +153,8 @@ class GroupEmailManagerTest(TestCase):
     def setUp(self):
         ek = G(EntityKind)
         temp = G(EmailTemplate, text_template='...')
-        self.group_email = G(Email, template=temp, sub_entity_kind=ek, context={})
-        self.individual_email = G(Email, template=temp, sub_entity_kind=None, context={})
+        self.group_email = g_email(template=temp, sub_entity_kind=ek, context={})
+        self.individual_email = g_email(template=temp, sub_entity_kind=None, context={})
 
     def test_get_queryset_excludes_individuals(self):
         qs = GroupEmail.objects.get_queryset()

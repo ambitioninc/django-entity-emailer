@@ -6,10 +6,10 @@ from entity_emailer.models import Email
 class EmailView(TemplateView):
     """
     Provides a basic view for emails that utilizes the html or text templates for rendering.
-    Note that it is assumed a url argument of the email PK is passed in.
+    Note that it is assumed a url argument of the email view_uid is passed in.
     """
     def get_email(self):
-        return Email.objects.select_related('template').get(id=self.args[0])
+        return Email.objects.select_related('template').get(view_uid=self.args[0])
 
     def get_template_names(self):
         email = self.get_email()
