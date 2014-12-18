@@ -1,11 +1,11 @@
 from datetime import datetime
 
 from django.core.exceptions import ValidationError
-from django.core.urlresolvers import reverse
 from django.db import models
 from entity.models import Entity, EntityKind
 from entity_event.models import Source
 from jsonfield import JSONField
+from uuidfield import UUIDField
 
 
 class EmailManager(models.Manager):
@@ -48,7 +48,10 @@ class Email(models.Model):
 
     Emails will not be sent to any individual who has unsubscribed
     from emails of that source.
+
+    Emails are viewable online and identified with their view_uid UUID
     """
+    view_uid = UUIDField(auto=True)
     source = models.ForeignKey(Source)
     sub_entity_kind = models.ForeignKey(EntityKind, null=True, default=None)
     recipients = models.ManyToManyField(Entity)

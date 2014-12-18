@@ -4,7 +4,7 @@ from django.core import mail
 from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
-from django_dynamic_fixture import G, N, F
+from django_dynamic_fixture import G, F
 from entity.models import Entity, EntityRelationship, EntityKind
 from entity_event.models import (
     Medium, Source, Subscription, Unsubscription, Event, EventActor
@@ -14,6 +14,7 @@ from mock import patch
 
 from entity_emailer import tasks
 from entity_emailer.models import Email, EmailTemplate
+from entity_emailer.tests.utils import g_email, n_email
 
 
 class ConvertEventsToEmailsTest(TestCase):
@@ -293,8 +294,8 @@ class SendUnsentScheduledEmailsTest(TestCase):
                                    'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         template = G(EmailTemplate, text_template='Hi')
-        G(Email, template=template, context={}, scheduled=datetime.min)
-        G(Email, template=template, context={}, scheduled=datetime.min)
+        g_email(template=template, context={}, scheduled=datetime.min)
+        g_email(template=template, context={}, scheduled=datetime.min)
         tasks.SendUnsentScheduledEmails().delay()
         self.assertEqual(len(mail.outbox), 2)
 
@@ -307,7 +308,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         template = G(EmailTemplate, text_template='Hi')
         from_address = 'test@example.com'
-        G(Email, template=template, context={}, from_address=from_address, scheduled=datetime.min)
+        g_email(template=template, context={}, from_address=from_address, scheduled=datetime.min)
         tasks.SendUnsentScheduledEmails().delay()
         self.assertEqual(mail.outbox[0].from_email, from_address)
 
@@ -319,7 +320,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
                                    'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         template = G(EmailTemplate, text_template='Hi')
-        G(Email, template=template, context={}, scheduled=datetime(2014, 01, 06))
+        g_email(template=template, context={}, scheduled=datetime(2014, 01, 06))
         tasks.SendUnsentScheduledEmails().delay()
         self.assertEqual(len(mail.outbox), 0)
 
@@ -331,7 +332,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
                                    'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         template = G(EmailTemplate, text_template='Hi')
-        G(Email, template=template, context={}, scheduled=datetime.min, sent=datetime.utcnow())
+        g_email(template=template, context={}, scheduled=datetime.min, sent=datetime.utcnow())
         tasks.SendUnsentScheduledEmails().delay()
         self.assertEqual(len(mail.outbox), 0)
 
@@ -343,7 +344,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
                                    'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         template = G(EmailTemplate, text_template='Hi')
-        G(Email, template=template, context={}, scheduled=datetime.min)
+        g_email(template=template, context={}, scheduled=datetime.min)
         tasks.SendUnsentScheduledEmails().delay()
         sent_email = Email.objects.filter(sent__isnull=False)
         self.assertEqual(sent_email.count(), 1)
@@ -397,8 +398,8 @@ class GetEmailAddressesTest(TestCase):
 
     def test_returns_sub_entities_emails_no_recipients(self):
         G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
-        email = G(
-            Email, source=self.source, recipients=[],
+        email = g_email(
+            source=self.source, recipients=[],
             sub_entity_kind=self.ek, template=self.template, context={}
         )
         addresses = tasks.get_subscribed_email_addresses(email)
@@ -406,8 +407,8 @@ class GetEmailAddressesTest(TestCase):
 
     def test_returns_sub_entities_emails(self):
         G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
-        email = G(
-            Email, source=self.source, recipients=[self.super_entity],
+        email = g_email(
+            source=self.source, recipients=[self.super_entity],
             sub_entity_kind=self.ek, template=self.template, context={}
         )
         addresses = tasks.get_subscribed_email_addresses(email)
@@ -421,8 +422,8 @@ class GetEmailAddressesTest(TestCase):
 
         G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
         G(Subscription, entity=super_entity2, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
-        email = G(
-            Email, source=self.source, recipients=[self.super_entity, super_entity2],
+        email = g_email(
+            source=self.source, recipients=[self.super_entity, super_entity2],
             sub_entity_kind=self.ek, template=self.template, context={}
         )
         addresses = tasks.get_subscribed_email_addresses(email)
@@ -431,8 +432,8 @@ class GetEmailAddressesTest(TestCase):
 
     def test_filters_other_entity_types(self):
         G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek2, medium=self.medium, source=self.source)
-        email = G(
-            Email, source=self.source, recipients=[self.super_entity],
+        email = g_email(
+            source=self.source, recipients=[self.super_entity],
             sub_entity_kind=self.ek2, template=self.template, context={}
         )
         addresses = tasks.get_subscribed_email_addresses(email)
@@ -441,8 +442,8 @@ class GetEmailAddressesTest(TestCase):
 
     def test_returns_own_email(self):
         G(Subscription, entity=self.super_entity, sub_entity_kind=None, medium=self.medium, source=self.source)
-        email = G(
-            Email, source=self.source, recipients=[self.super_entity],
+        email = g_email(
+            source=self.source, recipients=[self.super_entity],
             sub_entity_kind=None, template=self.template, context={}
         )
         addresses = tasks.get_subscribed_email_addresses(email)
@@ -451,8 +452,8 @@ class GetEmailAddressesTest(TestCase):
 
     def test_no_recipients_no_sub_entity_kind(self):
         G(Subscription, entity=self.super_entity, sub_entity_kind=None, medium=self.medium, source=self.source)
-        email = G(
-            Email, source=self.source, recipients=[],
+        email = g_email(
+            source=self.source, recipients=[],
             sub_entity_kind=None, template=self.template, context={}
         )
         addresses = tasks.get_subscribed_email_addresses(email)
@@ -461,8 +462,8 @@ class GetEmailAddressesTest(TestCase):
     def test_returns_own_email_multiple_recipients(self):
         G(Subscription, entity=self.super_entity, sub_entity_kind=None, medium=self.medium, source=self.source)
         G(Subscription, entity=self.sub_entity_1, sub_entity_kind=None, medium=self.medium, source=self.source)
-        email = G(
-            Email, source=self.source, recipients=[self.super_entity, self.sub_entity_1],
+        email = g_email(
+            source=self.source, recipients=[self.super_entity, self.sub_entity_1],
             sub_entity_kind=None, template=self.template, context={}
         )
         addresses = tasks.get_subscribed_email_addresses(email)
@@ -472,8 +473,8 @@ class GetEmailAddressesTest(TestCase):
     def test_unsubscription_works(self):
         G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
         G(Unsubscription, entity=self.sub_entity_1, source=self.source, medium=self.medium)
-        email = G(
-            Email, recipients=[self.super_entity], sub_entity_kind=self.ek,
+        email = g_email(
+            recipients=[self.super_entity], sub_entity_kind=self.ek,
             source=self.source, template=self.template, context={}
         )
         addresses = tasks.get_subscribed_email_addresses(email)
@@ -484,8 +485,8 @@ class GetEmailAddressesTest(TestCase):
         custom_medium_name = 'test_medium'
         other_medium = G(Medium, name=custom_medium_name)
         G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=other_medium, source=self.source)
-        email = G(
-            Email, source=self.source, recipients=[self.super_entity],
+        email = g_email(
+            source=self.source, recipients=[self.super_entity],
             sub_entity_kind=self.ek, template=self.template, context={}
         )
         expected_addresses = {u'test_sub1@example.com', u'test_sub2@example.com'}
@@ -509,21 +510,21 @@ class RenderTemplatesTest(TestCase):
     def test_text_path(self, open_mock):
         open_mock.return_value.__enter__.return_value.read.return_value = 'Hi {{ name }}'
         template = G(EmailTemplate, text_template_path='NotNothing')
-        email = N(Email, id=2, template=template, context={'name': 'Mr. T'})
+        email = n_email(id=2, template=template, context={'name': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, 'Hi Mr. T')
         self.assertEqual(rendered_html, '')
 
     def test_text_textfield(self):
         template = G(EmailTemplate, text_template='Hi {{ name }}')
-        email = N(Email, id=2, template=template, context={'name': 'Mr. T'})
+        email = n_email(id=2, template=template, context={'name': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, 'Hi Mr. T')
         self.assertEqual(rendered_html, '')
 
     def test_html_path_on_disk(self):
         template = G(EmailTemplate, html_template_path='hi_template.html')
-        email = N(Email, id=2, template=template, context={'entity': 'Mr. T'})
+        email = n_email(id=2, template=template, context={'entity': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
         self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')
@@ -533,7 +534,7 @@ class RenderTemplatesTest(TestCase):
         temp = '<html>Hi {{ name }}</html>'
         open_mock.return_value.__enter__.return_value.read.return_value = temp
         template = G(EmailTemplate, html_template_path='NotNothing')
-        email = N(Email, id=2, template=template, context={'name': 'Mr. T'})
+        email = n_email(id=2, template=template, context={'name': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
         self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')
@@ -543,8 +544,8 @@ class RenderTemplatesTest(TestCase):
         temp = '<html>Hi {{ entity }}</html>'
         open_mock.return_value.__enter__.return_value.read.return_value = temp
         person = G(Entity, display_name='Swansonbot')
-        email = N(
-            Email, id=2, source=F(context_loader='entity_emailer.tests.test_tasks.render_template_context_loader'),
+        email = n_email(
+            id=2, source=F(context_loader='entity_emailer.tests.test_tasks.render_template_context_loader'),
             template=F(html_template_path='NotNothing'), context={'entity': person.id})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
@@ -553,7 +554,7 @@ class RenderTemplatesTest(TestCase):
     def test_test_textfield(self):
         temp = '<html>Hi {{ name }}</html>'
         template = G(EmailTemplate, html_template=temp)
-        email = N(Email, id=2, template=template, context={'name': 'Mr. T'})
+        email = n_email(id=2, template=template, context={'name': 'Mr. T'})
         rendered_text, rendered_html = tasks.render_templates(email)
         self.assertEqual(rendered_text, '')
         self.assertEqual(rendered_html, '<html>Hi Mr. T</html>')
