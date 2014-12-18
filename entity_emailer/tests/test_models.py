@@ -117,19 +117,19 @@ class EmailTemplateUnicodeTest(TestCase):
 class EmailGetContext(SimpleTestCase):
     def test_without_context_loader(self):
         email = n_email(
-            id=2, context={'hi': 'hi'}, source=N(
+            id=2, context={'hi': 'hi'}, view_uid='00001111222233334444555566667777', source=N(
                 Source, context_loader='entity_emailer.tests.test_models.basic_context_loader',
                 persist_dependencies=False))
         self.assertEqual(email.get_context(), {
             'hello': 'hello',
-            'entity_emailer_id': 2,
+            'entity_emailer_id': '00001111222233334444555566667777',
         })
 
     def test_with_context_loader(self):
-        email = n_email(id=3, context={'hi': 'hi'})
+        email = n_email(id=3, context={'hi': 'hi'}, view_uid='00001111222233334444555566667777')
         self.assertEqual(email.get_context(), {
             'hi': 'hi',
-            'entity_emailer_id': 3,
+            'entity_emailer_id': '00001111222233334444555566667777',
         })
 
 
