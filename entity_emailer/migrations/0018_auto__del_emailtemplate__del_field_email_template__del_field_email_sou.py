@@ -8,9 +8,6 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Deleting model 'EmailTemplate'
-        db.delete_table(u'entity_emailer_emailtemplate')
-
         # Deleting field 'Email.template'
         db.delete_column(u'entity_emailer_email', 'template_id')
 
@@ -19,7 +16,9 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Email.context'
         db.delete_column(u'entity_emailer_email', 'context')
-
+        
+        # Deleting model 'EmailTemplate'
+        db.delete_table(u'entity_emailer_emailtemplate')
 
         # Changing field 'Email.event'
         db.alter_column(u'entity_emailer_email', 'event_id', self.gf('django.db.models.fields.related.ForeignKey')(default=0, to=orm['entity_event.Event']))
