@@ -9,7 +9,7 @@ class EmailView(TemplateView):
     Note that it is assumed a url argument of the email view_uid is passed in.
     """
     def get_email(self):
-        return Email.objects.select_related('template').get(view_uid=self.args[0])
+        return Email.objects.select_related('event').get(view_uid=self.args[0])
 
     def get_template_names(self):
         email = self.get_email()

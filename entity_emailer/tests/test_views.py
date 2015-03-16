@@ -3,7 +3,6 @@ from django.test import TestCase
 from django_dynamic_fixture import G, F
 from entity.models import Entity
 
-from entity_emailer.models import EmailTemplate
 from entity_emailer.tests.utils import g_email
 
 
