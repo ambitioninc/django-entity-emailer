@@ -65,14 +65,13 @@ class Email(models.Model):
 
     objects = EmailManager()
 
-    def get_context(self):
+    def render(self, medium):
         """
-        Retrieves the context for this email, passing it through the context loader of
-        the email template if necessary. It also adds the email url address to the context.
+        Renders the event, assuming it has already had its context and renderers prefetched.
         """
-        context = self.source.get_context(self.context)
-        context['entity_emailer_id'] = str(self.view_uid)
-        return context
+        self.event.context['entity_emailer_id'] = str(self.view_uid)
+        print 'context', self.event.context
+        return self.event.render(medium)
 
 
 class IndividualEmailManager(models.Manager):

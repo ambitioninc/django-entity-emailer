@@ -34,7 +34,7 @@ class SendUnsentScheduledEmails(Task):
         emails = []
         for email in to_send:
             to_email_addresses = get_subscribed_email_addresses(email)
-            text_message, html_message = email.event.render(email_medium)
+            text_message, html_message = email.render(email_medium)
             message = create_email_message(
                 to_emails=to_email_addresses,
                 from_email=email.from_address or default_from_email,
@@ -43,9 +43,11 @@ class SendUnsentScheduledEmails(Task):
                 html=html_message,
             )
             emails.append(message)
-        connection = mail.get_connection()
-        connection.send_messages(emails)
-        to_send.update(sent=current_time)
+
+        print 'emails', emails[0].alternatives
+        #connection = mail.get_connection()
+        #connection.send_messages(emails)
+        #to_send.update(sent=current_time)
 
 
 def create_email_message(to_emails, from_email, subject, text, html):
@@ -100,7 +102,7 @@ def get_subscribed_email_addresses(email):
     else:
         all_entities = list(email.recipients.all())
 
-    send_to = email_medium.filter_source_targets_by_unsubscription(email.source_id, all_entities)
+    send_to = email_medium.filter_source_targets_by_unsubscription(email.event.source_id, all_entities)
     emails = [e.entity_meta['email'] for e in send_to]
     return emails
 
