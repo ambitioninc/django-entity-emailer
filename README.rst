@@ -173,6 +173,10 @@ emails, and a subscription to that combination of email and source.
     )
 
 
+Along with this, you will need to associate the email medium with a
+``RenderingStyle`` object in entity event so that it can perform email
+rendering. More about this in the next section.
+
 Sending an Email about an Event
 -------------------------------
 
