@@ -227,6 +227,11 @@ The subject line of this email will use the first 40 characters from the rendere
 if one specifies a <title> HTML tag in their template, the contents of the tag will be used as the
 email subject.
 
+For more detailed information on event rendering, checkout `django-entity-event`_.
+
+.. _`django-entity-event`: https://github.com/ambitioninc/django-entity-event
+
+
 Unsubscribing
 -------------
 
