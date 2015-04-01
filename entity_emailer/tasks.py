@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 
+from bs4 import BeautifulSoup
 from celery import Task
 from db_mutex import db_mutex
 from django.conf import settings
@@ -11,6 +12,24 @@ from entity_emailer.models import Email
 from entity_emailer import get_medium
 
 LOG = logging.getLogger(__name__)
+
+
+def extract_email_subject_from_html_content(email_content):
+    """
+    This function extracts an email subject from the rendered html email context.
+    It first tries to find a title block inside of a head block. If that exists,
+    the title is used as the subject of the email. If it does not exist,
+    the first 40 characters of the email are used as the subject. In the latter
+    case, it is assumed that html tags are not actually present in the html content.
+    """
+    soup = BeautifulSoup(email_content)
+    subject = soup.title.string.strip() if soup.title else None
+    if not subject:
+        subject = email_content.split('\n')[0].strip()[:40]
+        if len(subject) == 40:
+            subject = u'{}...'.format(subject)
+
+    return subject
 
 
 class SendUnsentScheduledEmails(Task):
@@ -38,16 +57,16 @@ class SendUnsentScheduledEmails(Task):
             message = create_email_message(
                 to_emails=to_email_addresses,
                 from_email=email.from_address or default_from_email,
-                subject=email.subject,
+                subject=email.subject or extract_email_subject_from_html_content(html_message),
                 text=text_message,
                 html=html_message,
             )
             emails.append(message)
 
         print 'emails', emails[0].alternatives
-        #connection = mail.get_connection()
-        #connection.send_messages(emails)
-        #to_send.update(sent=current_time)
+        connection = mail.get_connection()
+        connection.send_messages(emails)
+        to_send.update(sent=current_time)
 
 
 def create_email_message(to_emails, from_email, subject, text, html):

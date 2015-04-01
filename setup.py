@@ -36,6 +36,7 @@ setup(
     ],
     license='MIT',
     install_requires=[
+        'beautifulsoup4>=4.3.2',
         'django>=1.6,<1.7',
         'django-db-mutex>=0.1.3',
         'django-entity>=1.5.0',
