@@ -70,31 +70,3 @@ class Email(models.Model):
         """
         self.event.context['entity_emailer_id'] = str(self.view_uid)
         return self.event.render(medium)
-
-
-class IndividualEmailManager(models.Manager):
-    def get_queryset(self):
-        return super(IndividualEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=True)
-
-
-class IndividualEmail(Email):
-    """A proxy model of Email to support a different admin Interface.
-    """
-    class Meta:
-        proxy = True
-
-    objects = IndividualEmailManager()
-
-
-class GroupEmailManager(models.Manager):
-    def get_queryset(self):
-        return super(GroupEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=False)
-
-
-class GroupEmail(Email):
-    """A proxy model of Email to support a different admin Interface.
-    """
-    class Meta:
-        proxy = True
-
-    objects = GroupEmailManager()

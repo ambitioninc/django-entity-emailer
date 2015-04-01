@@ -15,7 +15,8 @@ class EmailView(View):
         email = self.get_email()
         medium = get_medium()
         context_loader.load_contexts_and_renderers([email.event], [medium])
-        return HttpResponse(email.render(medium))
+        txt, html = email.render(medium)
+        return HttpResponse(html if html else txt)
 
     def get_email(self):
         return Email.objects.select_related('event').get(view_uid=self.args[0])
