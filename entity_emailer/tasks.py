@@ -44,7 +44,8 @@ class SendUnsentScheduledEmails(Task):
     def run_worker(self, *args, **kwargs):
         current_time = datetime.utcnow()
         email_medium = get_medium()
-        to_send = Email.objects.filter(scheduled__lte=current_time, sent__isnull=True).select_related('event')
+        to_send = Email.objects.filter(
+            scheduled__lte=current_time, sent__isnull=True).select_related('event').prefetch_related('recipients')
 
         # Fetch the contexts of every event so that they may be rendered
         context_loader.load_contexts_and_renderers([e.event for e in to_send], [email_medium])
@@ -63,7 +64,6 @@ class SendUnsentScheduledEmails(Task):
             )
             emails.append(message)
 
-        print 'emails', emails[0].alternatives
         connection = mail.get_connection()
         connection.send_messages(emails)
         to_send.update(sent=current_time)
@@ -111,19 +111,7 @@ def get_subscribed_email_addresses(email):
     Returns:
       A list of strings: email addresses.
     """
-    email_medium = get_medium()
-    if email.sub_entity_kind is not None:
-        all_entities = [
-            se
-            for recipient in email.recipients.all()
-            for se in recipient.get_sub_entities() if se.entity_kind_id == email.sub_entity_kind_id
-        ]
-    else:
-        all_entities = list(email.recipients.all())
-
-    send_to = email_medium.filter_source_targets_by_unsubscription(email.event.source_id, all_entities)
-    emails = [e.entity_meta['email'] for e in send_to]
-    return emails
+    return [e.entity_meta['email'] for e in email.recipients.all()]
 
 
 class ConvertEventsToEmails(Task):
@@ -145,8 +133,4 @@ def convert_events_to_emails():
     email_medium = get_medium()
 
     for event, targets in email_medium.events_targets(seen=False, mark_seen=True):
-        # TODO Update this so that it inspects the rendered email itself to determine the subject
-        # or figure out a solution so that the subject is determined dynamically from the email
-        # content
-        Email.objects.create_email(
-            event=event, recipients=targets, subject=event.context.get('entity_emailer_subject', 'Email'))
+        Email.objects.create_email(event=event, recipients=targets)

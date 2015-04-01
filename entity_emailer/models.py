@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.db import models
-from entity.models import Entity, EntityKind
+from entity.models import Entity
 from entity_event.models import Event
 from uuidfield import UUIDField
 
@@ -51,7 +51,6 @@ class Email(models.Model):
     """
     view_uid = UUIDField(auto=True)
     event = models.ForeignKey(Event)
-    sub_entity_kind = models.ForeignKey(EntityKind, null=True, default=None)
     recipients = models.ManyToManyField(Entity)
     subject = models.CharField(max_length=256)
     from_address = models.CharField(max_length=256, default='')
@@ -70,7 +69,6 @@ class Email(models.Model):
         Renders the event, assuming it has already had its context and renderers prefetched.
         """
         self.event.context['entity_emailer_id'] = str(self.view_uid)
-        print 'context', self.event.context
         return self.event.render(medium)
 
 
