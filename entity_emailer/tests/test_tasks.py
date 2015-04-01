@@ -4,7 +4,7 @@ from django.core import mail
 from django.core.management import call_command
 from django.test import TestCase, SimpleTestCase
 from django.test.utils import override_settings
-from django_dynamic_fixture import G, F
+from django_dynamic_fixture import G
 from entity.models import Entity, EntityRelationship, EntityKind
 from entity_event.models import (
     Medium, Source, Subscription, Unsubscription, Event, EventActor
@@ -14,7 +14,7 @@ from mock import patch
 
 from entity_emailer import tasks
 from entity_emailer.models import Email
-from entity_emailer.tests.utils import g_email, n_email
+from entity_emailer.tests.utils import g_email
 
 
 class ExtractEmailSubjectFromHtmlContentTest(SimpleTestCase):
@@ -378,113 +378,15 @@ class GetFromEmailAddressTest(TestCase):
 
 
 class GetEmailAddressesTest(TestCase):
-    def setUp(self):
-        self.ek = G(EntityKind)
-        self.ek2 = G(EntityKind)
-        self.super_entity = G(Entity, entity_meta={'email': 'test_super@example.com'}, entity_kind=self.ek)
-        self.sub_entity_1 = G(Entity, entity_meta={'email': 'test_sub1@example.com'}, entity_kind=self.ek)
-        self.sub_entity_2 = G(Entity, entity_meta={'email': 'test_sub2@example.com'}, entity_kind=self.ek)
-        self.sub_entity_3 = G(Entity, entity_meta={'email': 'test_sub3@example.com'}, entity_kind=self.ek2)
-        G(EntityRelationship, sub_entity=self.sub_entity_1, super_entity=self.super_entity)
-        G(EntityRelationship, sub_entity=self.sub_entity_2, super_entity=self.super_entity)
-        G(EntityRelationship, sub_entity=self.sub_entity_3, super_entity=self.super_entity)
-        self.medium = G(Medium, name='email')
-        self.source = G(Source, name='test_email')
-
-    def test_returns_sub_entities_emails_no_recipients(self):
-        G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
-        email = g_email(
-            source=self.source, recipients=[],
-            sub_entity_kind=self.ek, context={}
-        )
-        addresses = tasks.get_subscribed_email_addresses(email)
-        self.assertEqual(addresses, [])
-
-    def test_returns_sub_entities_emails(self):
-        G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
-        email = g_email(
-            source=self.source, recipients=[self.super_entity],
-            sub_entity_kind=self.ek, template=self.template, context={}
-        )
-        addresses = tasks.get_subscribed_email_addresses(email)
-        expected_addresses = {u'test_sub1@example.com', u'test_sub2@example.com'}
-        self.assertEqual(set(addresses), expected_addresses)
-
-    def test_returns_sub_entities_emails_multiple_recipients(self):
-        super_entity2 = G(Entity, entity_kind=self.ek)
-        sub_entity_4 = G(Entity, entity_meta={'email': 'test_sub4@example.com'}, entity_kind=self.ek)
-        G(EntityRelationship, sub_entity=sub_entity_4, super_entity=super_entity2)
-
-        G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
-        G(Subscription, entity=super_entity2, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
-        email = g_email(
-            source=self.source, recipients=[self.super_entity, super_entity2],
-            sub_entity_kind=self.ek, template=self.template, context={}
-        )
-        addresses = tasks.get_subscribed_email_addresses(email)
-        expected_addresses = {u'test_sub1@example.com', u'test_sub2@example.com', u'test_sub4@example.com'}
-        self.assertEqual(set(addresses), expected_addresses)
-
-    def test_filters_other_entity_types(self):
-        G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek2, medium=self.medium, source=self.source)
-        email = g_email(
-            source=self.source, recipients=[self.super_entity],
-            sub_entity_kind=self.ek2, template=self.template, context={}
-        )
-        addresses = tasks.get_subscribed_email_addresses(email)
-        expected_addresses = {u'test_sub3@example.com'}
-        self.assertEqual(set(addresses), expected_addresses)
-
     def test_returns_own_email(self):
-        G(Subscription, entity=self.super_entity, sub_entity_kind=None, medium=self.medium, source=self.source)
-        email = g_email(
-            source=self.source, recipients=[self.super_entity],
-            sub_entity_kind=None, template=self.template, context={}
-        )
+        entity_1 = G(Entity, entity_meta={'email': 'test_1@example.com'})
+        entity_2 = G(Entity, entity_meta={'email': 'test_2@example.com'})
+        email = g_email(recipients=[entity_1, entity_2], context={})
         addresses = tasks.get_subscribed_email_addresses(email)
-        expected_addresses = {u'test_super@example.com'}
+        expected_addresses = {u'test_1@example.com', u'test_2@example.com'}
         self.assertEqual(set(addresses), expected_addresses)
 
-    def test_no_recipients_no_sub_entity_kind(self):
-        G(Subscription, entity=self.super_entity, sub_entity_kind=None, medium=self.medium, source=self.source)
-        email = g_email(
-            source=self.source, recipients=[],
-            sub_entity_kind=None, template=self.template, context={}
-        )
+    def test_no_recipients(self):
+        email = g_email(recipients=[], context={})
         addresses = tasks.get_subscribed_email_addresses(email)
         self.assertEqual(addresses, [])
-
-    def test_returns_own_email_multiple_recipients(self):
-        G(Subscription, entity=self.super_entity, sub_entity_kind=None, medium=self.medium, source=self.source)
-        G(Subscription, entity=self.sub_entity_1, sub_entity_kind=None, medium=self.medium, source=self.source)
-        email = g_email(
-            source=self.source, recipients=[self.super_entity, self.sub_entity_1],
-            sub_entity_kind=None, template=self.template, context={}
-        )
-        addresses = tasks.get_subscribed_email_addresses(email)
-        expected_addresses = {u'test_super@example.com', u'test_sub1@example.com'}
-        self.assertEqual(set(addresses), expected_addresses)
-
-    def test_unsubscription_works(self):
-        G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=self.medium, source=self.source)
-        G(Unsubscription, entity=self.sub_entity_1, source=self.source, medium=self.medium)
-        email = g_email(
-            recipients=[self.super_entity], sub_entity_kind=self.ek,
-            source=self.source, template=self.template, context={}
-        )
-        addresses = tasks.get_subscribed_email_addresses(email)
-        expected_addresses = {u'test_sub2@example.com'}
-        self.assertEqual(set(addresses), expected_addresses)
-
-    def test_email_settings(self):
-        custom_medium_name = 'test_medium'
-        other_medium = G(Medium, name=custom_medium_name)
-        G(Subscription, entity=self.super_entity, sub_entity_kind=self.ek, medium=other_medium, source=self.source)
-        email = g_email(
-            source=self.source, recipients=[self.super_entity],
-            sub_entity_kind=self.ek, template=self.template, context={}
-        )
-        expected_addresses = {u'test_sub1@example.com', u'test_sub2@example.com'}
-        with self.settings(ENTITY_EMAILER_MEDIUM_NAME=custom_medium_name):
-            addresses = tasks.get_subscribed_email_addresses(email)
-        self.assertEqual(set(addresses), expected_addresses)
