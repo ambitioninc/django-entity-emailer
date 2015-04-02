@@ -1,17 +1,35 @@
 from datetime import datetime
 import logging
 
+from bs4 import BeautifulSoup
 from celery import Task
 from db_mutex import db_mutex
 from django.conf import settings
 from django.core import mail
-from django.template.loader import render_to_string
-from django.template import Context, Template
+from entity_event import context_loader
 
-from entity_emailer.models import Email, EmailTemplate
+from entity_emailer.models import Email
 from entity_emailer import get_medium
 
 LOG = logging.getLogger(__name__)
+
+
+def extract_email_subject_from_html_content(email_content):
+    """
+    This function extracts an email subject from the rendered html email context.
+    It first tries to find a title block inside of a head block. If that exists,
+    the title is used as the subject of the email. If it does not exist,
+    the first 40 characters of the email are used as the subject. In the latter
+    case, it is assumed that html tags are not actually present in the html content.
+    """
+    soup = BeautifulSoup(email_content)
+    subject = soup.title.string.strip() if soup.title else None
+    if not subject:
+        subject = email_content.split('\n')[0].strip()[:40]
+        if len(subject) == 40:
+            subject = u'{}...'.format(subject)
+
+    return subject
 
 
 class SendUnsentScheduledEmails(Task):
@@ -25,20 +43,27 @@ class SendUnsentScheduledEmails(Task):
 
     def run_worker(self, *args, **kwargs):
         current_time = datetime.utcnow()
-        to_send = Email.objects.filter(scheduled__lte=current_time, sent__isnull=True)
+        email_medium = get_medium()
+        to_send = Email.objects.filter(
+            scheduled__lte=current_time, sent__isnull=True).select_related('event').prefetch_related('recipients')
+
+        # Fetch the contexts of every event so that they may be rendered
+        context_loader.load_contexts_and_renderers([e.event for e in to_send], [email_medium])
+
         default_from_email = get_from_email_address()
         emails = []
         for email in to_send:
             to_email_addresses = get_subscribed_email_addresses(email)
-            text_message, html_message = render_templates(email)
+            text_message, html_message = email.render(email_medium)
             message = create_email_message(
                 to_emails=to_email_addresses,
                 from_email=email.from_address or default_from_email,
-                subject=email.subject,
+                subject=email.subject or extract_email_subject_from_html_content(html_message),
                 text=text_message,
                 html=html_message,
             )
             emails.append(message)
+
         connection = mail.get_connection()
         connection.send_messages(emails)
         to_send.update(sent=current_time)
@@ -86,56 +111,7 @@ def get_subscribed_email_addresses(email):
     Returns:
       A list of strings: email addresses.
     """
-    email_medium = get_medium()
-    if email.sub_entity_kind is not None:
-        all_entities = [
-            se
-            for recipient in email.recipients.all()
-            for se in recipient.get_sub_entities() if se.entity_kind_id == email.sub_entity_kind_id
-        ]
-    else:
-        all_entities = list(email.recipients.all())
-
-    send_to = email_medium.filter_source_targets_by_unsubscription(email.source_id, all_entities)
-    emails = [e.entity_meta['email'] for e in send_to]
-    return emails
-
-
-def render_templates(email):
-    """Render the correct templates with the correct context.
-
-    Args:
-      An email object. Contains references to template and context.
-
-    Returns:
-      A tuple of (rendered_text, rendered_html). Either, but not both
-      may be an empty string.
-    """
-    context = email.get_context()
-
-    # Process text template:
-    if email.template.text_template_path:
-        rendered_text = render_to_string(
-            email.template.text_template_path, context
-        )
-    elif email.template.text_template:
-        context = Context(context)
-        rendered_text = Template(email.template.text_template).render(context)
-    else:
-        rendered_text = ''
-
-    # Process html template
-    if email.template.html_template_path:
-        rendered_html = render_to_string(
-            email.template.html_template_path, context
-        )
-    elif email.template.html_template:
-        context = Context(context)
-        rendered_html = Template(email.template.html_template).render(context)
-    else:
-        rendered_html = ''
-
-    return (rendered_text, rendered_html)
+    return [e.entity_meta['email'] for e in email.recipients.all()]
 
 
 class ConvertEventsToEmails(Task):
@@ -157,15 +133,4 @@ def convert_events_to_emails():
     email_medium = get_medium()
 
     for event, targets in email_medium.events_targets(seen=False, mark_seen=True):
-        try:
-            template_name = event.context.get('entity_emailer_template', '')
-            template = EmailTemplate.objects.get(template_name=template_name)
-        except EmailTemplate.DoesNotExist:
-            err = 'Event does not have a template or the template does not exist. Context: {context}'
-            LOG.error(err.format(note=event, context=event.context))
-            # If we can't find a template, skip creating this email.
-            continue
-
-        Email.objects.create_email(
-            source=event.source, recipients=targets, template=template, context=event.context,
-            subject=event.context.get('entity_emailer_subject', 'Email'))
+        Email.objects.create_email(event=event, recipients=targets)

@@ -1,10 +1,8 @@
 from datetime import datetime
 
-from django.core.exceptions import ValidationError
 from django.db import models
-from entity.models import Entity, EntityKind
-from entity_event.models import Source
-from jsonfield import JSONField
+from entity.models import Entity
+from entity_event.models import Event
 from uuidfield import UUIDField
 
 
@@ -52,13 +50,10 @@ class Email(models.Model):
     Emails are viewable online and identified with their view_uid UUID
     """
     view_uid = UUIDField(auto=True)
-    source = models.ForeignKey(Source)
-    sub_entity_kind = models.ForeignKey(EntityKind, null=True, default=None)
+    event = models.ForeignKey(Event)
     recipients = models.ManyToManyField(Entity)
     subject = models.CharField(max_length=256)
     from_address = models.CharField(max_length=256, default='')
-    template = models.ForeignKey('EmailTemplate')
-    context = JSONField()
     uid = models.CharField(max_length=100, unique=True, null=True, default=None)
     # The `scheduled` field uses a default value of the datetime.utcnow function.
     # This means it will be called any time a new Email is created, but it also
@@ -69,87 +64,9 @@ class Email(models.Model):
 
     objects = EmailManager()
 
-    def get_context(self):
+    def render(self, medium):
         """
-        Retrieves the context for this email, passing it through the context loader of
-        the email template if necessary. It also adds the email url address to the context.
+        Renders the event, assuming it has already had its context and renderers prefetched.
         """
-        context = self.source.get_context(self.context)
-        context['entity_emailer_id'] = str(self.view_uid)
-        return context
-
-
-class EmailTemplate(models.Model):
-    """A template for email to be sent. Rendered by django with context.
-
-    Of the four fields: `text_template_path`, 'html_template_path',
-    `text_template`, and `html_template`, at least one must be
-    non-empty.
-
-    Both a text and html template may be provided, either
-    through a path to the template, or a raw template object.
-
-    However, for either text or html templates, both a path and raw
-    template should not be provided.
-
-    For more complex context loading capabilities, provide an executable
-    function for loading the email context. This function accepts the
-    context stored for the email and returns the context again with any
-    other fetched values.
-
-    The email sending task will take care of rendering the template,
-    and creating a text or text/html message based on the rendered
-    template.
-    """
-    template_name = models.CharField(max_length=64, unique=True)
-    text_template_path = models.CharField(max_length=256, default='')
-    html_template_path = models.CharField(max_length=256, default='')
-    text_template = models.TextField(default='')
-    html_template = models.TextField(default='')
-
-    def clean(self):
-        template_fields = [
-            self.text_template_path, self.html_template_path,
-            self.text_template, self.html_template
-        ]
-        if not any(template_fields):
-            raise ValidationError('At least one template source must be provided')
-        if self.text_template_path and self.text_template:
-            raise ValidationError('Cannot provide a template path and template')
-        if self.html_template_path and self.html_template:
-            raise ValidationError('Cannot provide a template path and template')
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super(EmailTemplate, self).save(*args, **kwargs)
-
-    def __unicode__(self):
-        return self.template_name
-
-
-class IndividualEmailManager(models.Manager):
-    def get_queryset(self):
-        return super(IndividualEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=True)
-
-
-class IndividualEmail(Email):
-    """A proxy model of Email to support a different admin Interface.
-    """
-    class Meta:
-        proxy = True
-
-    objects = IndividualEmailManager()
-
-
-class GroupEmailManager(models.Manager):
-    def get_queryset(self):
-        return super(GroupEmailManager, self).get_queryset().filter(sub_entity_kind__isnull=False)
-
-
-class GroupEmail(Email):
-    """A proxy model of Email to support a different admin Interface.
-    """
-    class Meta:
-        proxy = True
-
-    objects = GroupEmailManager()
+        self.event.context['entity_emailer_id'] = str(self.view_uid)
+        return self.event.render(medium)
