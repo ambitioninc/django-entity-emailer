@@ -41,6 +41,7 @@ setup(
         'django-db-mutex>=0.1.3',
         'django-entity>=1.5.0',
         'django-entity-event>=0.3.0',
+        'django-entity-subscription',
         'django-uuidfield>=0.5.0',
         'celery>=3.1',
     ],
