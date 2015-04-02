@@ -5,8 +5,18 @@ from south.v2 import DataMigration
 from django.db import models
 
 class Migration(DataMigration):
+    depends_on = (
+        ('entity_subscription', '0001_initial'),
+    )
+
     def forwards(self, orm):
-        pass
+        old_to_new_sources = {
+            s: orm['entity_event.Source'].objects.get(name=s.name)
+            for s in orm['entity_subscription.Source'].objects.all()
+        }
+        for e in orm.Email.objects.all():
+            e.source2 = old_to_new_sources[e.source]
+            e.save()
 
     def backwards(self, orm):
         raise RuntimeError
@@ -126,7 +136,36 @@ class Migration(DataMigration):
             'medium': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_event.Medium']"}),
             'source': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_event.Source']"})
         },
+        u'entity_subscription.medium': {
+            'Meta': {'object_name': 'Medium'},
+            'description': ('django.db.models.fields.TextField', [], {}),
+            'display_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '64'})
+        },
+        u'entity_subscription.source': {
+            'Meta': {'object_name': 'Source'},
+            'description': ('django.db.models.fields.TextField', [], {}),
+            'display_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '64'})
+        },
+        u'entity_subscription.subscription': {
+            'Meta': {'object_name': 'Subscription'},
+            'entity': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity.Entity']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'medium': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_subscription.Medium']"}),
+            'source': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_subscription.Source']"}),
+            'subentity_kind': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity.EntityKind']", 'null': 'True'})
+        },
+        u'entity_subscription.unsubscribe': {
+            'Meta': {'object_name': 'Unsubscribe'},
+            'entity': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity.Entity']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'medium': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_subscription.Medium']"}),
+            'source': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['entity_subscription.Source']"})
+        }
     }
 
-    complete_apps = ['entity', 'entity_event', 'entity_emailer']
+    complete_apps = ['entity', 'entity_subscription', 'entity_event', 'entity_emailer']
     symmetrical = True
