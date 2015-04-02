@@ -1,19 +1,22 @@
-from django.views.generic import TemplateView
+from django.http import HttpResponse
+from django.views.generic import View
+from entity_event import context_loader
 
 from entity_emailer.models import Email
+from entity_emailer.utils import get_medium
 
 
-class EmailView(TemplateView):
+class EmailView(View):
     """
     Provides a basic view for emails that utilizes the html or text templates for rendering.
     Note that it is assumed a url argument of the email view_uid is passed in.
     """
-    def get_email(self):
-        return Email.objects.select_related('template').get(view_uid=self.args[0])
-
-    def get_template_names(self):
+    def get(self, request, *args, **kwargs):
         email = self.get_email()
-        return [email.template.html_template_path, email.template.text_template_path]
+        medium = get_medium()
+        context_loader.load_contexts_and_renderers([email.event], [medium])
+        txt, html = email.render(medium)
+        return HttpResponse(html if html else txt)
 
-    def get_context_data(self):
-        return self.get_email().get_context()
+    def get_email(self):
+        return Email.objects.select_related('event').get(view_uid=self.args[0])

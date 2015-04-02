@@ -9,6 +9,7 @@ class Migration(SchemaMigration):
 
     depends_on = (
         ('entity', '0001_initial'),
+        ('entity_subscription', '0001_initial'),
     )
 
     def forwards(self, orm):

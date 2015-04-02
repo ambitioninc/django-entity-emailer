@@ -6,15 +6,15 @@ Django Entity Emailer
 
 Do you:
 
-- Use `Django-Entity`_?
-- Want to send emails to entities easily?
+- Use `Django-Entity-Event`_?
+- Want to have emailing as another medium for entity events?
 - Want a record of emails sent?
 - Want automatic assurance that you don't accidentally send hundreds
   of emails over the course of a few minutes?
 
 Then use Django Entity Emailer!
 
-.. _`Django-Entity`: https://github.com/ambitioninc/django-entity
+.. _`Django-Entity-Event`: https://github.com/ambitioninc/django-entity-event
 
 Installation
 ------------
@@ -32,12 +32,13 @@ Setup and Configuration
 -----------------------
 
 In order to use django-entity-emailer, you must be mirroring entities
-using the `Django-Entity`_
-framework. Additionally, in order to send email to entities, those
+using the `django-entity`_
+framework.
+Additionally, in order to send email to entities, those
 entities must include a value for the key ``'email'`` in their
 ``entity_meta`` field.
 
-.. _`Django-Entity`: https://github.com/ambitioninc/django-entity
+.. _`django-entity`: https://github.com/ambitioninc/django-entity
 
 If both of those conditions are true, setup is fairly straightforward:
 
@@ -66,13 +67,13 @@ When sending an email, django-entity-emailer will first check if the
 in the email's 'from' field, otherwise it will fall back to the value
 set in ``DEFAULT_FROM_EMAIL``.
 
-Finally, django-entity-emailer uses `django-entity-subscription`_ for
-subscription management. This libary makes it easy for developers and
-users to manage what sorts of notifications users recieve. However, it
-does require some configuration. For a simple emailer configuration,
+Finally, django-entity-emailer is an installable medium that is used with
+`django-entity-event`_ . This libary makes it easy for developers and
+users to manage what sorts of notifications users recieve over various
+mediums. However, it does require some configuration. For a simple emailer configuration,
 see the 'Basic entity-subscription configuration' section.
 
-.. _`django-entity-subscription`: https://github.com/ambitioninc/django-entity-subscription
+.. _`django-entity-event`: https://github.com/ambitioninc/django-entity-event
 
 
 Getting ``'email'`` into ``'entity_meta'``
@@ -136,17 +137,17 @@ Making sure to use a value for ``'schedule'`` that is appropriate for
 the volume of emails, and server resources.
 
 
-Basic entity-subscription configuration
+Basic entity-event configuration
 ```````````````````````````````````````
 
 In order to ensure that users of your site will not recieve emails
 that they don't want to recieve, the entity-emailer application ties
-in to the `entity-subscription` framework. As a developer it is up to
+in to the `entity-event` framework. As a developer it is up to
 you to expose the ability for users to subscribe and unsubscribe from
 emails. Here, we will show the basic configuration required to start
 sending emails.
 
-.. _`entity-subscription`: https://github.com/ambitioninc/django-entity-subscription
+.. _`entity-event`: https://github.com/ambitioninc/django-entity-event
 
 Running ``manage.py add_email_medium`` will add the medium that
 entity-emailer relies on to send emails. We must also have a source of
@@ -155,7 +156,7 @@ emails, and a subscription to that combination of email and source.
 .. code:: python
 
     from entity_emailer import get_medium
-    from entity_subscription.models import Source, Subscription
+    from entity_event.models import Source, Subscription
     from entity.models import Entity, EntityKind
 
     super_entity = Entity.objects.get_for_obj(my_group_object)
@@ -172,153 +173,67 @@ emails, and a subscription to that combination of email and source.
     )
 
 
-Send an Email Immediately
--------------------------
+Along with this, you will need to associate the email medium with a
+``RenderingStyle`` object in entity event so that it can perform email
+rendering. More about this in the next section.
 
-Sending an email immediately is as simple as saving a record to the
-database. Django-entity-emailer listens to the post-save signal sent
-for the Email model and spawns a celery task to send the email
-asynchronously.
+Sending an Email about an Event
+-------------------------------
 
-A prerequisite to sending an email is categorizing it into a
-source. Categorizing emails into sources makes it easier to allow
-users to unsubscribe from types of emails they don't wish to
-receive. We have set up a source above, called ``admin_source``, for the
-examples below, we will be using a source called ``marketing_source``.
+Sending an email is as simple as saving an event to the database
+and subscribing to the email medium after templates are defined for the
+email. The entity emailer will go through
+the events, send out emails to the subscribed targets, and mark the
+events as seen so that duplicate emails are never sent.
 
-Before we can send an email, we also need to create an ``EmailTemplate``
-for the context of our email to fill in. An email template is simply a
-reference to a django template to be filled in with some context.
-
-This object can use a path that Django's template loaders will
-understand, or store the template directly as a TextField. Here, we're
-storing a simple text template. The different possibilities for
-constructing an ``EmailTemplate`` object are discussed more deeply in
-the "Email Templates" section.
+For example, let's say that we wish to be notified via email when a user
+logs into a site. Assuming that the email medium and admin sources are setup
+from our previous examples, we can make an email template (login.html) that looks like the
+following:
 
 .. code:: python
 
-    new_item_template = EmailTemplate.objects.create(
-        template_name='simple item email',
-        template_text='Check out {{ item }} for the price of {{ value }}!'
-    )
+    {{ user }} just logged in!
 
-
-Once an email type and template have been created, sending an email is
-as simple as creating an email field without specifying a ``scheduled``
-field.
+We then set up a rendering style and a context renderer for this template so that
+emails can be rendered:
 
 .. code:: python
 
-    send_to_entity = Entity.objects.get_for_obj(some_user_with_an_email)
+    from entity_event.models import RenderingStyle, ContextRenderer
 
-    Email.objects.create_email(
-        source=marketing_source,
-        recipients=[send_to_entity],
-        subject='This is a great offer!',
-        template=new_item_template,
-        context={'item': 'new car', 'value': '$35,000'}
+    style = RenderingStyle.objects.create(name='email')
+    ContextRenderer.objects.create(
+        rendering_style=style,
+        source=admin_source,
+        html_template_path='templates/login.html',
     )
 
-By saving this field, an email will be sent to the email stored in
-``send_to_entity.entity_meta['email']``.
-
-Email an individual
-```````````````````
-
-As seen in the example above, emailing an individual or individuals is as simple as
-specifying the appropriate entities in the ``Email.recipients``
-field. Additionally, because django-entity supports super-entity and
-sub-entity relationships, it is very easy to send emails to groups of
-individuals.
-
-
-Email a group
-`````````````
-
-Emailing all the users in a group comes nearly for free if the group
-is correctly mirrored in django-entity. Sending the email is still as
-simple as saving an instance of ``Email``.
-
-There are two changes we make from the example for sending to an
-individual.
-
-First, the ``recipients`` field is still a list of entity, but instead of
-entities with an ``entity_meta['email']`` value, they should be entities
-that have a super-entity relationship to the entities the emails are to
-be sent to.
-
-Second, a ``subentity_kind`` field specifies what kind of subentity we
-want to email. All sub-entities of the ``recipients`` entity list and of the kind
-specified by ``subentity_kind`` must have an 'email' set in their
-``entity_meta``.
-
-A complete example is below:
+When the context renderer is in place, the email medium will need to be updated to point
+to the appropriate rendering style we want to use. To continue our example:
 
 .. code:: python
 
-    from entity_emailer.models import Email
+    email_medium.rendering_style = style
+    email_medium.save()
 
-    from entity.models import Entity, EntityKind
-
-    from my_example_app.models import Newsletter, NewsletterSubscribers
-
-    # This send_to_entity has sub-entities we want to send to.
-    marketing_news_today = Newsletter.objects.get(name='Marketing News Today')
-    send_to_entity = Entity.objects.get_for_obj(marketing_news_today)
-
-    Email.objects.create_email(
-        source=marketing_source,
-        # our send_to_entity, is a newsletter, a super-entity of
-        # NewsletterSubscribers
-        recipients=[send_to_entity],
-        # Below is our subentity kind, 'newslettersubscribers'
-        subentity_kind=EntityKind.objects.get('newslettersubscribers'),
-        subject='This is a great offer!',
-        template=new_item_template,
-        context={'item': 'new car', 'value': '$35,000'}
-    )
-
-Once this email is saved to the database, the email will be sent to all
-of the sub-entities of the ``marketing_news_today`` entity automatically.
-
-This allows you to email any group of users that exists in your django
-application without having to write custom ORM queries to pull that
-group out of the database and organize their email addresses.
-
-Note that adding more groups of entities is as simple as adding them to the
-recipients list in the above example.
-
-
-Send An Email at a Scheduled Time
----------------------------------
-
-Sending an email at a scheduled time is just as easy as sending one
-immediately. Assuming that the ``CELERYBEAT_SCHEDULE`` is correctly
-configured, as described in the "Setup and Configuration" section, the
-only difference from the process described above is that you must
-provide a value for the ``scheduled`` field.
+Once we have the rendering style in place, assume an Event is created with the following context:
 
 .. code:: python
 
-    from datetime import datetime
-    from entity.models import EntityKind
+    {
+        'user': 'User name'
+    }
+    
+When this happens, an email will be sent to the subscribed user that says 'User name just logged in!'.
 
-    Email.objects.create_email(
-        source=marketing_source,
-        recipients=[send_to_entity],
-        subentity_kind=EntityKind.objects.get(name='newslettersubscribers'),
-        subject='This is a great offer!',
-        template=new_item_template,
-        context={'item': 'New Hoverboard', 'value': '$35,000'}
-        scheduled=datetime(year=2022, month=01, day=01, hour=12),
-    )
+The subject line of this email will use the first 40 characters from the rendered email template. However,
+if one specifies a <title> HTML tag in their template, the contents of the tag will be used as the
+email subject.
 
-The email created above will be sent at the time in the ``scheduled``
-field, UTC.
+For more detailed information on event rendering, checkout `django-entity-event`_.
 
-Additionally, scheduled emails that are processed at the same time
-will re-use a connection to the SMTP server to minimize overhead.
+.. _`django-entity-event`: https://github.com/ambitioninc/django-entity-event
 
 
 Unsubscribing
@@ -332,7 +247,7 @@ entity-subscription framework.
 .. code:: python
 
     from entity_emailer import get_medium
-    from entity_subscription import Source, Unsubscribe
+    from entity_event import Source, Unsubscribe
 
     admin_emails = Source.objects.get(name='admin')
     Unsubscribe.objects.create(
@@ -345,40 +260,6 @@ This user will be excluded both from receiving emails of this type
 that were sent to them individually, or as part of a group email.
 
 
-Email Templates
----------------
-
-Instance of ``EmailTemplate`` are used to store email templates that can
-be re-used with different contexts.
-
-The possible fields on ``EmailTemplate`` are:
-
-- ``template_name`` - Required. A descriptive name for the template.
-- ``text_template_path`` - A path to a template for a text email.
-- ``html_template_path`` - A path to a template for an html email.
-- ``text_template`` - A TextField for inputing a text email template directly.
-- ``html_template`` - A TextField for inputing an html email template directly.
-- ``context_loader`` - An optional function path for loading the email context.
-
-Both a text and html template may be provided, either through a path
-to the template, or a raw template object. However, for either text or
-html templates, both a path and raw template should not be provided.
-
-If all of ``text_template_path``, ``text_template``, ``html_template_path``,
-and ``html_template`` are missing, if ``text_template_path`` and
-``text_template`` are both provided, or if ``html_template_path`` and
-``html_template`` are both provided, a ``ValidationError`` will be raised.
-
-If a ``context_loader`` path to a function is provided, the serialized context
-of the email will be passed through this function. This provides the ability
-for the function to fetch other non-serializable attributes about the context
-and pass them along before rendering.
-
-The email sending task will take care of rendering the template,
-and creating a text or text/html message based on the rendered
-template.
-
-
 Showing Emails in the Browser
 -----------------------------
 
@@ -389,6 +270,10 @@ The url view will use the text/html templates of the email to render it as a web
 
 Release Notes
 -------------
+
+* 0.7
+
+    * Converted entity emailer to solely be a medium for entity event.
 
 * 0.6
 
