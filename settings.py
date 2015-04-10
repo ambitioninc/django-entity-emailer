@@ -46,7 +46,6 @@ def configure_settings():
                 'entity_event',
                 'entity_emailer',
                 'entity_emailer.tests',
-                'entity_subscription',
             ),
             ROOT_URLCONF='entity_emailer.urls',
             DEFAULT_FROM_EMAIL='test@example.com',
