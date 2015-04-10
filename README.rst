@@ -271,6 +271,11 @@ The url view will use the text/html templates of the email to render it as a web
 Release Notes
 -------------
 
+* 0.8.1
+
+    * Added Django 1.7 support
+    * Added Python 3.4 support
+
 * 0.7.1
 
     * Squashed entity emailer migrations and removed entity subscription dependency.
