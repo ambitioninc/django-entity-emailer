@@ -271,6 +271,10 @@ The url view will use the text/html templates of the email to render it as a web
 Release Notes
 -------------
 
+* 0.7.1
+
+    * Squashed entity emailer migrations and removed entity subscription dependency.
+
 * 0.7
 
     * Converted entity emailer to solely be a medium for entity event.
