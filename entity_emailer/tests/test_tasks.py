@@ -320,7 +320,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
     def test_sends_no_future_emails(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
-        g_email(context={}, scheduled=datetime(2014, 01, 06))
+        g_email(context={}, scheduled=datetime(2014, 1, 6))
         tasks.SendUnsentScheduledEmails().delay()
         self.assertEqual(len(mail.outbox), 0)
 

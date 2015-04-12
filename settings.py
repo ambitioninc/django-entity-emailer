@@ -1,6 +1,7 @@
 import os
 
 from celery import Celery
+import django
 from django.conf import settings
 
 
@@ -32,6 +33,7 @@ def configure_settings():
             raise RuntimeError('Unsupported test DB {0}'.format(test_db))
 
         settings.configure(
+            MIDDLEWARE_CLASSES=(),
             DATABASES={
                 'default': db_config,
             },
@@ -41,12 +43,11 @@ def configure_settings():
                 'django.contrib.contenttypes',
                 'django.contrib.sessions',
                 'django.contrib.admin',
-                'south',
                 'entity',
                 'entity_event',
                 'entity_emailer',
                 'entity_emailer.tests',
-            ),
+            ) + (('south',) if django.VERSION[1] <= 6 else ()),
             ROOT_URLCONF='entity_emailer.urls',
             DEFAULT_FROM_EMAIL='test@example.com',
             DEBUG=False,
