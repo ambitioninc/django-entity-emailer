@@ -103,15 +103,19 @@ def get_from_email_address():
 
 
 def get_subscribed_email_addresses(email):
-    """From an email object determine the appropriate email addresses.
+    """Given the email recipients, get the email address from the entity metadata.
 
-    Excludes the addresses of those who unsubscribed from the email's
-    type.
+    The email field is determined in the settings by the ENTITY_EMAILER_EMAIL_KEY field.
 
-    Returns:
-      A list of strings: email addresses.
+    If the user wishes to exlude certain entities from receiving emails, they can define
+    which field in the entity metadata to use with the EXCLUDE_ENTITY_EMAILER_KEY field.
     """
-    return [e.entity_meta['email'] for e in email.recipients.all()]
+    email_key = getattr(settings, 'ENTITY_EMAILER_EMAIL_KEY', 'email')
+    exclude_entity_key = getattr(settings, 'ENTITY_EMAILER_EXCLUDE_KEY', None)
+    return [
+        e.entity_meta[email_key] for e in email.recipients.all()
+        if not exclude_entity_key or e.entity_meta[exclude_entity_key]
+    ]
 
 
 class ConvertEventsToEmails(Task):

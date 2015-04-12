@@ -363,6 +363,35 @@ class CreateEmailObjectTest(TestCase):
         self.assertEqual(mail.outbox[0].alternatives, expected_alternatives)
 
 
+class GetSubscribedEmailAddressesTest(TestCase):
+    def test_get_emails_default_settings(self):
+        e1 = G(Entity, entity_meta={'email': 'hello1@hello.com'})
+        e2 = G(Entity, entity_meta={'email': 'hello2@hello.com'})
+        email = g_email(recipients=[e1, e2], context={})
+
+        addresses = tasks.get_subscribed_email_addresses(email)
+        self.assertEqual(set(addresses), set(['hello1@hello.com', 'hello2@hello.com']))
+
+    @override_settings(ENTITY_EMAILER_EMAIL_KEY='email_address')
+    @override_settings(ENTITY_EMAILER_EXCLUDE_KEY='last_invite_time')
+    def test_get_emails_override_email_key(self):
+        e1 = G(Entity, entity_meta={'email_address': 'hello1@hello.com', 'last_invite_time': 1000})
+        e2 = G(Entity, entity_meta={'email_address': 'hello2@hello.com', 'last_invite_time': None})
+        email = g_email(recipients=[e1, e2], context={})
+
+        addresses = tasks.get_subscribed_email_addresses(email)
+        self.assertEqual(set(addresses), set(['hello1@hello.com']))
+
+    @override_settings(ENTITY_EMAILER_EMAIL_KEY='email_address')
+    def test_get_emails_override_email_key_exclude_key(self):
+        e1 = G(Entity, entity_meta={'email_address': 'hello1@hello.com'})
+        e2 = G(Entity, entity_meta={'email_address': 'hello2@hello.com'})
+        email = g_email(recipients=[e1, e2], context={})
+
+        addresses = tasks.get_subscribed_email_addresses(email)
+        self.assertEqual(set(addresses), set(['hello1@hello.com', 'hello2@hello.com']))
+
+
 class GetFromEmailAddressTest(TestCase):
     def test_default_from_email(self):
         # settings.DEFAULT_FROM_EMAIL is already set to test@example.com
