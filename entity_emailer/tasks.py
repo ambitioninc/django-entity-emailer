@@ -54,15 +54,16 @@ class SendUnsentScheduledEmails(Task):
         emails = []
         for email in to_send:
             to_email_addresses = get_subscribed_email_addresses(email)
-            text_message, html_message = email.render(email_medium)
-            message = create_email_message(
-                to_emails=to_email_addresses,
-                from_email=email.from_address or default_from_email,
-                subject=email.subject or extract_email_subject_from_html_content(html_message),
-                text=text_message,
-                html=html_message,
-            )
-            emails.append(message)
+            if to_email_addresses:
+                text_message, html_message = email.render(email_medium)
+                message = create_email_message(
+                    to_emails=to_email_addresses,
+                    from_email=email.from_address or default_from_email,
+                    subject=email.subject or extract_email_subject_from_html_content(html_message),
+                    text=text_message,
+                    html=html_message,
+                )
+                emails.append(message)
 
         connection = mail.get_connection()
         connection.send_messages(emails)

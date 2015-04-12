@@ -295,6 +295,17 @@ class SendUnsentScheduledEmailsTest(TestCase):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('entity_emailer.tasks.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
+    def test_sends_all_scheduled_emails_no_email_addresses(self, render_mock, address_mock):
+        render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
+        address_mock.return_value = []
+        g_email(context={}, scheduled=datetime.min)
+        g_email(context={}, scheduled=datetime.min)
+        tasks.SendUnsentScheduledEmails().delay()
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.get_subscribed_email_addresses')
+    @patch.object(Event, 'render', spec_set=True)
     def test_sends_all_scheduled_emails(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
