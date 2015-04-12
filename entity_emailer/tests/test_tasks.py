@@ -295,6 +295,17 @@ class SendUnsentScheduledEmailsTest(TestCase):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('entity_emailer.tasks.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
+    def test_sends_all_scheduled_emails_no_email_addresses(self, render_mock, address_mock):
+        render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
+        address_mock.return_value = []
+        g_email(context={}, scheduled=datetime.min)
+        g_email(context={}, scheduled=datetime.min)
+        tasks.SendUnsentScheduledEmails().delay()
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('entity_emailer.tasks.get_subscribed_email_addresses')
+    @patch.object(Event, 'render', spec_set=True)
     def test_sends_all_scheduled_emails(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
@@ -361,6 +372,35 @@ class CreateEmailObjectTest(TestCase):
         email.send()
         expected_alternatives = [('<html>A</html>', 'text/html')]
         self.assertEqual(mail.outbox[0].alternatives, expected_alternatives)
+
+
+class GetSubscribedEmailAddressesTest(TestCase):
+    def test_get_emails_default_settings(self):
+        e1 = G(Entity, entity_meta={'email': 'hello1@hello.com'})
+        e2 = G(Entity, entity_meta={'email': 'hello2@hello.com'})
+        email = g_email(recipients=[e1, e2], context={})
+
+        addresses = tasks.get_subscribed_email_addresses(email)
+        self.assertEqual(set(addresses), set(['hello1@hello.com', 'hello2@hello.com']))
+
+    @override_settings(ENTITY_EMAILER_EMAIL_KEY='email_address')
+    @override_settings(ENTITY_EMAILER_EXCLUDE_KEY='last_invite_time')
+    def test_get_emails_override_email_key(self):
+        e1 = G(Entity, entity_meta={'email_address': 'hello1@hello.com', 'last_invite_time': 1000})
+        e2 = G(Entity, entity_meta={'email_address': 'hello2@hello.com', 'last_invite_time': None})
+        email = g_email(recipients=[e1, e2], context={})
+
+        addresses = tasks.get_subscribed_email_addresses(email)
+        self.assertEqual(set(addresses), set(['hello1@hello.com']))
+
+    @override_settings(ENTITY_EMAILER_EMAIL_KEY='email_address')
+    def test_get_emails_override_email_key_exclude_key(self):
+        e1 = G(Entity, entity_meta={'email_address': 'hello1@hello.com'})
+        e2 = G(Entity, entity_meta={'email_address': 'hello2@hello.com'})
+        email = g_email(recipients=[e1, e2], context={})
+
+        addresses = tasks.get_subscribed_email_addresses(email)
+        self.assertEqual(set(addresses), set(['hello1@hello.com', 'hello2@hello.com']))
 
 
 class GetFromEmailAddressTest(TestCase):
