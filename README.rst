@@ -177,6 +177,16 @@ Along with this, you will need to associate the email medium with a
 ``RenderingStyle`` object in entity event so that it can perform email
 rendering. More about this in the next section.
 
+Django Entity Emailer must know the email addresses of entities and assumes that an
+email address has been mirrored by default in the entity metadata. By default, it
+uses the "email" metadata key, but this can be overridden by setting a
+``ENTITY_EMAILER_EMAIL_KEY`` in the settings.
+
+Django Entity Emailer also has the ability to exclude certain entities from ever
+being emailed. In order to do this, mirror metadata that when ``None`` or ``False``
+means that the entity should never be emailed. Then set the ``ENTITY_EMAILER_EXCLUDE_KEY``
+setting to the key of this metadata.
+
 Sending an Email about an Event
 -------------------------------
 
@@ -270,6 +280,11 @@ The url view will use the text/html templates of the email to render it as a web
 
 Release Notes
 -------------
+
+* 0.8.4
+
+    * Added the abilty to override the email key in entity metadata.
+    * Added the ability to exlude entities from being emailed based on a metadata key.
 
 * 0.8.1
 
