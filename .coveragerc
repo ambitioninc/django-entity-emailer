@@ -2,7 +2,6 @@
 branch = True
 omit =
     */migrations/*
-    */south_migrations/*
     entity_emailer/version.py
     entity_emailer/apps.py
 source = entity_emailer
