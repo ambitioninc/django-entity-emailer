@@ -281,6 +281,10 @@ The url view will use the text/html templates of the email to render it as a web
 Release Notes
 -------------
 
+* 0.9.0
+
+    * Added Django 1.8 support and dropped 1.6 support
+
 * 0.8.4
 
     * Added the abilty to override the email key in entity metadata.
