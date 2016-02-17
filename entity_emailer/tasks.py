@@ -9,7 +9,7 @@ from django.core import mail
 from entity_event import context_loader
 
 from entity_emailer.models import Email
-from entity_emailer import get_medium
+from entity_emailer.utils import get_medium
 
 LOG = logging.getLogger(__name__)
 

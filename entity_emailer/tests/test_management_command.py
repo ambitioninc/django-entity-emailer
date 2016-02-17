@@ -2,7 +2,7 @@ from django.core.management import call_command
 from django.test import TestCase
 from entity_event.models import Medium, Source
 
-from entity_emailer import get_medium, get_admin_source
+from entity_emailer.utils import get_medium, get_admin_source
 
 
 class AddEmailMediumCommandTest(TestCase):
