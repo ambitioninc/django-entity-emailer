@@ -3,13 +3,13 @@ import logging
 
 from bs4 import BeautifulSoup
 from celery import Task
-from db_mutex import db_mutex
+from db_mutex.db_mutex import db_mutex
 from django.conf import settings
 from django.core import mail
 from entity_event import context_loader
 
 from entity_emailer.models import Email
-from entity_emailer import get_medium
+from entity_emailer.utils import get_medium
 
 LOG = logging.getLogger(__name__)
 
