@@ -1,8 +1,9 @@
+import re
+from setuptools import setup, find_packages
+
 # import multiprocessing to avoid this bug (http://bugs.python.org/issue15881#msg170215)
 import multiprocessing
 assert multiprocessing
-import re
-from setuptools import setup, find_packages
 
 
 def get_version():
@@ -31,23 +32,23 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Framework :: Django',
-        'Framework :: Django :: 1.7',
         'Framework :: Django :: 1.8',
         'Framework :: Django :: 1.9',
     ],
     license='MIT',
     install_requires=[
         'beautifulsoup4>=4.3.2',
-        'Django>=1.7',
-        'django-db-mutex>=0.3.0',
-        'django-entity>=1.12.0',
-        'django-entity-event>=0.5.0',
+        'Django>=1.8',
+        'django-db-mutex>=0.4.0',
+        'django-entity>=1.13.0',
+        'django-entity-event>=0.6.0',
         'django-uuidfield>=0.5.0',
-        'celery>=3.1',
+        'celery>=3.1,<4.0',
     ],
     tests_require=[
         'django-dynamic-fixture',
