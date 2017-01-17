@@ -33,7 +33,8 @@ def extract_email_subject_from_html_content(email_content):
 
 
 class SendUnsentScheduledEmails(Task):
-    """Send all unsent emails, whose scheduled time has passed.
+    """
+    Send all unsent emails, whose scheduled time has passed.
 
     This task should be added to a celery beat.
     """
@@ -71,7 +72,8 @@ class SendUnsentScheduledEmails(Task):
 
 
 def create_email_message(to_emails, from_email, subject, text, html):
-    """Create the appropriate plaintext or html email object.
+    """
+    Create the appropriate plaintext or html email object.
 
     Returns:
 
@@ -98,25 +100,42 @@ def create_email_message(to_emails, from_email, subject, text, html):
 
 
 def get_from_email_address():
-    """Get a 'from' address based on the django settings.
+    """
+    Get a 'from' address based on the django settings.
     """
     return getattr(settings, 'ENTITY_EMAILER_FROM_EMAIL', settings.DEFAULT_FROM_EMAIL)
 
 
 def get_subscribed_email_addresses(email):
-    """Given the email recipients, get the email address from the entity metadata.
+    """
+    Given the email recipients, get the email address from the entity metadata.
 
     The email field is determined in the settings by the ENTITY_EMAILER_EMAIL_KEY field.
 
-    If the user wishes to exlude certain entities from receiving emails, they can define
+    If the user wishes to exclude certain entities from receiving emails, they can define
     which field in the entity metadata to use with the EXCLUDE_ENTITY_EMAILER_KEY field.
     """
+
+    # Get the key to use to find the email address
     email_key = getattr(settings, 'ENTITY_EMAILER_EMAIL_KEY', 'email')
+
+    # Get the exclude key
     exclude_entity_key = getattr(settings, 'ENTITY_EMAILER_EXCLUDE_KEY', None)
-    return [
-        e.entity_meta[email_key] for e in email.recipients.all()
-        if not exclude_entity_key or e.entity_meta[exclude_entity_key]
-    ]
+
+    # Get the email addresses from the recipient entities
+    email_addresses = []
+    for entity in email.recipients.all():
+        # Get the email address out of the entity meta data
+        email_address = entity.entity_meta.get(email_key, None)
+
+        # Make sure the email address exists and is not an empty string
+        if email_address is not None and len(email_address):
+            # If the exclude entity key is not set, or is set but the value is not none
+            if not exclude_entity_key or entity.entity_meta.get(exclude_entity_key, None) is not None:
+                email_addresses.append(email_address)
+
+    # Return the email addresses
+    return email_addresses
 
 
 class ConvertEventsToEmails(Task):

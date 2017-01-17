@@ -378,7 +378,9 @@ class GetSubscribedEmailAddressesTest(TestCase):
     def test_get_emails_default_settings(self):
         e1 = G(Entity, entity_meta={'email': 'hello1@hello.com'})
         e2 = G(Entity, entity_meta={'email': 'hello2@hello.com'})
-        email = g_email(recipients=[e1, e2], context={})
+        e3 = G(Entity, entity_meta={'email': ''})
+        e4 = G(Entity, entity_meta={})
+        email = g_email(recipients=[e1, e2, e3, e4], context={})
 
         addresses = tasks.get_subscribed_email_addresses(email)
         self.assertEqual(set(addresses), set(['hello1@hello.com', 'hello2@hello.com']))
