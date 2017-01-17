@@ -47,7 +47,7 @@ setup(
         'django-db-mutex>=0.4.0',
         'django-entity>=1.13.0',
         'django-entity-event>=0.6.0',
-        'django-uuidfield>=0.5.0',
+        'django-uuidfield>=0.5.0.ambition',
         'celery>=3.1,<4.0',
     ],
     tests_require=[
