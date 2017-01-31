@@ -108,35 +108,6 @@ For a more complete description of how entity mirroring works, see the
 documentation for django-entity.
 
 
-Configuring Celery
-``````````````````
-
-To use the email scheduling feature of ``entity_emailer``, you must add
-the appropriate task to your ``CELERYBEAT_SCHEDULE``. For a general
-introduction to configuring periodic celery tasks in Django, see the
-official guide, `Celery Periodic Tasks`.
-
-.. _`Celery Periodic Tasks`: http://celery.readthedocs.org/en/latest/userguide/periodic-tasks.html
-
-In short, it should be enough to add the following to your existing
-celerybeat schedule.
-
-.. code:: python
-
-    CELERYBEAT_SCHEDULE = {
-        # ...
-        'send_scheduled_emails': {
-            'task': 'entity_emailer.tasks.SendUnsentScheduledEmails',
-            'schedule': timedelta(minutes=1),
-        },
-        # ...
-    }
-
-
-Making sure to use a value for ``'schedule'`` that is appropriate for
-the volume of emails, and server resources.
-
-
 Basic entity-event configuration
 ```````````````````````````````````````
 
