@@ -319,7 +319,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(mail.outbox[0].from_email, from_address)
 
-    @patch('entity_emailer.tasks.get_subscribed_email_addresses')
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_no_future_emails(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
