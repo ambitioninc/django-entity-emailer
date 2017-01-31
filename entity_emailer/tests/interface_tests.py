@@ -12,33 +12,35 @@ from entity_event.models import (
 from freezegun import freeze_time
 from mock import patch
 
-from entity_emailer import tasks
+from entity_emailer.interface import EntityEmailerInterface
 from entity_emailer.models import Email
 from entity_emailer.tests.utils import g_email
+from entity_emailer.utils import extract_email_subject_from_html_content, create_email_message, \
+    get_subscribed_email_addresses, get_from_email_address
 
 
 class ExtractEmailSubjectFromHtmlContentTest(SimpleTestCase):
     def test_blank(self):
-        subject = tasks.extract_email_subject_from_html_content('')
+        subject = extract_email_subject_from_html_content('')
         self.assertEquals(subject, '')
 
     def test_with_title_block(self):
-        subject = tasks.extract_email_subject_from_html_content('<html><head><title> Hello! </title></head></html>')
+        subject = extract_email_subject_from_html_content('<html><head><title> Hello! </title></head></html>')
         self.assertEquals(subject, 'Hello!')
 
     def test_wo_title_block_under_40_chars_content(self):
-        subject = tasks.extract_email_subject_from_html_content(' Small content ')
+        subject = extract_email_subject_from_html_content(' Small content ')
         self.assertEquals(subject, 'Small content')
 
     def test_wo_title_block_under_40_chars_multiline_content(self):
-        subject = tasks.extract_email_subject_from_html_content((
+        subject = extract_email_subject_from_html_content((
             ' Small content \n'
             'that spans multiple lines'
         ))
         self.assertEquals(subject, 'Small content')
 
     def test_wo_title_block_gt_40_chars_content(self):
-        subject = tasks.extract_email_subject_from_html_content((
+        subject = extract_email_subject_from_html_content((
             ' This is reallly long content that is greater than 40 chars on the first line. It should have ...'
         ))
         self.assertEquals(subject, 'This is reallly long content that is gre...')
@@ -49,18 +51,13 @@ class ConvertEventsToEmailsTest(TestCase):
         call_command('add_email_medium')
         self.email_medium = Medium.objects.get(name='email')
 
-    @patch('entity_emailer.tasks.convert_events_to_emails', spec_set=True)
-    def test_task(self, mock_convert_events_to_emails):
-        tasks.ConvertEventsToEmails().run()
-        mock_convert_events_to_emails.assert_called_once_with()
-
     def test_no_events(self):
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
         self.assertFalse(Email.objects.exists())
 
     def test_no_subscriptions(self):
         G(Event, context={})
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
         self.assertFalse(Email.objects.exists())
 
     @freeze_time('2013-1-2')
@@ -75,7 +72,7 @@ class ConvertEventsToEmailsTest(TestCase):
         event = G(Event, source=source, context=email_context)
         G(EventActor, event=event, entity=e)
 
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
         self.assertEquals(list(email.recipients.all()), [e])
@@ -95,8 +92,8 @@ class ConvertEventsToEmailsTest(TestCase):
         event = G(Event, source=source, context=email_context)
         G(EventActor, event=event, entity=e)
 
-        tasks.convert_events_to_emails()
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
         self.assertEquals(list(email.recipients.all()), [e])
@@ -121,7 +118,7 @@ class ConvertEventsToEmailsTest(TestCase):
         event = G(Event, source=source, context=email_context)
         G(EventActor, event=event, entity=se)
 
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
         # Since the other_e entity does not follow the se entity, only the e entity receives an email
@@ -149,7 +146,7 @@ class ConvertEventsToEmailsTest(TestCase):
         G(EventActor, event=event, entity=other_e)
         G(EventActor, event=event, entity=e)
 
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
         self.assertEquals(set(email.recipients.all()), set([e, other_e]))
@@ -175,7 +172,7 @@ class ConvertEventsToEmailsTest(TestCase):
         event = G(Event, source=source, context=email_context)
         G(EventActor, event=event, entity=se)
 
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
         # Both entities are subscribed with a group subscription and are following the super entity of the event
@@ -202,7 +199,7 @@ class ConvertEventsToEmailsTest(TestCase):
         event = G(Event, source=source, context=email_context)
         G(EventActor, event=event, entity=e)
 
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
         # Both entities are subscribed with a group subscription and are following the super entity of the event
@@ -230,7 +227,7 @@ class ConvertEventsToEmailsTest(TestCase):
         event = G(Event, source=source, context=email_context)
         G(EventActor, event=event, entity=e)
 
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
         self.assertEquals(set(email.recipients.all()), set([other_e]))
@@ -253,7 +250,7 @@ class ConvertEventsToEmailsTest(TestCase):
         G(Event, source=source, context=email_context)
         G(Event, source=source, context=email_context)
 
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
 
         self.assertEquals(Email.objects.count(), 2)
         for email in Email.objects.all():
@@ -278,7 +275,7 @@ class ConvertEventsToEmailsTest(TestCase):
         event = G(Event, source=source, context=email_context)
         G(EventActor, event=event, entity=e)
 
-        tasks.convert_events_to_emails()
+        EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
         self.assertEquals(set(email.recipients.all()), set([e]))
@@ -292,81 +289,75 @@ class SendUnsentScheduledEmailsTest(TestCase):
     def setUp(self):
         G(Medium, name='email')
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('entity_emailer.tasks.get_subscribed_email_addresses')
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_all_scheduled_emails_no_email_addresses(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = []
         g_email(context={}, scheduled=datetime.min)
         g_email(context={}, scheduled=datetime.min)
-        tasks.SendUnsentScheduledEmails().delay()
+        EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(len(mail.outbox), 0)
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('entity_emailer.tasks.get_subscribed_email_addresses')
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_all_scheduled_emails(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         g_email(context={}, scheduled=datetime.min)
         g_email(context={}, scheduled=datetime.min)
-        tasks.SendUnsentScheduledEmails().delay()
+        EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(len(mail.outbox), 2)
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('entity_emailer.tasks.get_subscribed_email_addresses')
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_email_with_specified_from_address(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         from_address = 'test@example.com'
         g_email(context={}, from_address=from_address, scheduled=datetime.min)
-        tasks.SendUnsentScheduledEmails().delay()
+        EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(mail.outbox[0].from_email, from_address)
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('entity_emailer.tasks.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_no_future_emails(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         g_email(context={}, scheduled=datetime(2014, 1, 6))
-        tasks.SendUnsentScheduledEmails().delay()
+        EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(len(mail.outbox), 0)
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('entity_emailer.tasks.get_subscribed_email_addresses')
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_no_sent_emails(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         g_email(context={}, scheduled=datetime.min, sent=datetime.utcnow())
-        tasks.SendUnsentScheduledEmails().delay()
+        EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(len(mail.outbox), 0)
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('entity_emailer.tasks.get_subscribed_email_addresses')
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_updates_times(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         g_email(context={}, scheduled=datetime.min)
-        tasks.SendUnsentScheduledEmails().delay()
+        EntityEmailerInterface.send_unsent_scheduled_emails()
         sent_email = Email.objects.filter(sent__isnull=False)
         self.assertEqual(sent_email.count(), 1)
 
 
 class CreateEmailObjectTest(TestCase):
     def test_no_html(self):
-        email = tasks.create_email_message(
+        email = create_email_message(
             ['to@example.com'], 'from@example.com', 'Subject', 'Email Body.', ''
         )
         email.send()
         self.assertEqual(mail.outbox[0].attachments, [])
 
     def test_html(self):
-        email = tasks.create_email_message(
+        email = create_email_message(
             ['to@example.com'], 'from@example.com', 'Subject', 'Email Body.', '<html>A</html>'
         )
         email.send()
@@ -382,7 +373,7 @@ class GetSubscribedEmailAddressesTest(TestCase):
         e4 = G(Entity, entity_meta={})
         email = g_email(recipients=[e1, e2, e3, e4], context={})
 
-        addresses = tasks.get_subscribed_email_addresses(email)
+        addresses = get_subscribed_email_addresses(email)
         self.assertEqual(set(addresses), set(['hello1@hello.com', 'hello2@hello.com']))
 
     @override_settings(ENTITY_EMAILER_EMAIL_KEY='email_address')
@@ -392,7 +383,7 @@ class GetSubscribedEmailAddressesTest(TestCase):
         e2 = G(Entity, entity_meta={'email_address': 'hello2@hello.com', 'last_invite_time': None})
         email = g_email(recipients=[e1, e2], context={})
 
-        addresses = tasks.get_subscribed_email_addresses(email)
+        addresses = get_subscribed_email_addresses(email)
         self.assertEqual(set(addresses), set(['hello1@hello.com']))
 
     @override_settings(ENTITY_EMAILER_EMAIL_KEY='email_address')
@@ -401,20 +392,20 @@ class GetSubscribedEmailAddressesTest(TestCase):
         e2 = G(Entity, entity_meta={'email_address': 'hello2@hello.com'})
         email = g_email(recipients=[e1, e2], context={})
 
-        addresses = tasks.get_subscribed_email_addresses(email)
+        addresses = get_subscribed_email_addresses(email)
         self.assertEqual(set(addresses), set(['hello1@hello.com', 'hello2@hello.com']))
 
 
 class GetFromEmailAddressTest(TestCase):
     def test_default_from_email(self):
         # settings.DEFAULT_FROM_EMAIL is already set to test@example.com
-        from_email = tasks.get_from_email_address()
+        from_email = get_from_email_address()
         expected = 'test@example.com'
         self.assertEqual(from_email, expected)
 
     @override_settings(ENTITY_EMAILER_FROM_EMAIL='test_entity@example.com')
     def test_entity_emailer_from_email(self):
-        from_email = tasks.get_from_email_address()
+        from_email = get_from_email_address()
         expected = 'test_entity@example.com'
         self.assertEqual(from_email, expected)
 
@@ -424,11 +415,11 @@ class GetEmailAddressesTest(TestCase):
         entity_1 = G(Entity, entity_meta={'email': 'test_1@example.com'})
         entity_2 = G(Entity, entity_meta={'email': 'test_2@example.com'})
         email = g_email(recipients=[entity_1, entity_2], context={})
-        addresses = tasks.get_subscribed_email_addresses(email)
+        addresses = get_subscribed_email_addresses(email)
         expected_addresses = {u'test_1@example.com', u'test_2@example.com'}
         self.assertEqual(set(addresses), expected_addresses)
 
     def test_no_recipients(self):
         email = g_email(recipients=[], context={})
-        addresses = tasks.get_subscribed_email_addresses(email)
+        addresses = get_subscribed_email_addresses(email)
         self.assertEqual(addresses, [])
