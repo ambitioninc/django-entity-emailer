@@ -381,7 +381,8 @@ class GetSubscribedEmailAddressesTest(TestCase):
     def test_get_emails_override_email_key(self):
         e1 = G(Entity, entity_meta={'email_address': 'hello1@hello.com', 'last_invite_time': 1000})
         e2 = G(Entity, entity_meta={'email_address': 'hello2@hello.com', 'last_invite_time': None})
-        email = g_email(recipients=[e1, e2], context={})
+        e3 = G(Entity, entity_meta={'email_address': 'hello3@hello.com', 'last_invite_time': False})
+        email = g_email(recipients=[e1, e2, e3], context={})
 
         addresses = get_subscribed_email_addresses(email)
         self.assertEqual(set(addresses), set(['hello1@hello.com']))
