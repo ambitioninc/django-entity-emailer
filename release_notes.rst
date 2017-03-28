@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+0.13.2
+------
+* Fix issue where  entities with ENTITY_EMAILER_EXCLUDE_KEY=False were being emailed
+
 0.13.1
 ------
 * Python 3 ready

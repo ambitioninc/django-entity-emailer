@@ -62,7 +62,7 @@ def get_subscribed_email_addresses(email):
         # Make sure the email address exists and is not an empty string
         if email_address is not None and len(email_address):
             # If the exclude entity key is not set, or is set but the value is not none
-            if not exclude_entity_key or entity.entity_meta.get(exclude_entity_key, None) is not None:
+            if not exclude_entity_key or entity.entity_meta.get(exclude_entity_key):
                 email_addresses.append(email_address)
 
     # Return the email addresses
