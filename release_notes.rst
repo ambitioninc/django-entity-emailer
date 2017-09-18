@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+0.14.0
+------
+* Add Python 3.6 support
+* Remove Django 1.8 support
+* Add Django 1.9 support
+* Add Django 1.10 support
+
 0.13.2
 ------
 * Fix issue where  entities with ENTITY_EMAILER_EXCLUDE_KEY=False were being emailed
