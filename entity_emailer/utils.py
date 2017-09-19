@@ -105,7 +105,7 @@ def extract_email_subject_from_html_content(email_content):
     the first 40 characters of the email are used as the subject. In the latter
     case, it is assumed that html tags are not actually present in the html content.
     """
-    soup = BeautifulSoup(email_content)
+    soup = BeautifulSoup(email_content, 'html.parser')
     subject = soup.title.string.strip() if soup.title else None
     if not subject:
         subject = email_content.split('\n')[0].strip()[:40]

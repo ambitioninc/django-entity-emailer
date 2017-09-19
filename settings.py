@@ -16,17 +16,21 @@ def configure_settings():
 
     if not settings.configured:
         # Determine the database settings depending on if a test_db var is set in CI mode or not
-        test_db = os.environ.get('DB', 'sqlite')
-        if test_db == 'postgres':
+        test_db = os.environ.get('DB', None)
+
+        if test_db is None:
+            db_config = {
+                'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                'NAME': 'ambition_test',
+                'USER': 'postgres',
+                'PASSWORD': '',
+                'HOST': 'db',
+            }
+        elif test_db == 'postgres':
             db_config = {
                 'ENGINE': 'django.db.backends.postgresql_psycopg2',
                 'USER': 'postgres',
-                'NAME': 'entity_emailer',
-            }
-        elif test_db == 'sqlite':
-            db_config = {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': 'entity_emailer_db',
+                'NAME': 'entity',
             }
         else:
             raise RuntimeError('Unsupported test DB {0}'.format(test_db))
@@ -52,4 +56,10 @@ def configure_settings():
             DEBUG=False,
             TEST_RUNNER='django_nose.NoseTestSuiteRunner',
             NOSE_ARGS=['--nocapture', '--nologcapture', '--verbosity=1'],
+            TEMPLATES=[
+                {
+                    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                    'APP_DIRS': True,
+                },
+            ]
         )
