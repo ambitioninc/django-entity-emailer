@@ -3,7 +3,7 @@ from datetime import datetime
 from django.db import models
 from entity.models import Entity
 from entity_event.models import Event
-from uuidfield import UUIDField
+import uuid
 
 
 class EmailManager(models.Manager):
@@ -49,7 +49,7 @@ class Email(models.Model):
 
     Emails are viewable online and identified with their view_uid UUID
     """
-    view_uid = UUIDField(auto=True)
+    view_uid = models.UUIDField(default=uuid.uuid4, editable=False)
     event = models.ForeignKey(Event)
     recipients = models.ManyToManyField(Entity)
     subject = models.CharField(max_length=256)
