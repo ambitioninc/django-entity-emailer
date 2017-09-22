@@ -2,8 +2,15 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import uuidfield.fields
 import datetime
+import uuid
+
+
+if hasattr(models, 'UUIDField'):
+    uuid_field = ('view_uid', models.UUIDField(default=uuid.uuid4, editable=False))
+else:
+    import uuidfield.fields
+    uuid_field = ('view_uid', uuidfield.fields.UUIDField(editable=False, unique=True, max_length=32, blank=True)),
 
 
 class Migration(migrations.Migration):
@@ -18,7 +25,7 @@ class Migration(migrations.Migration):
             name='Email',
             fields=[
                 ('id', models.AutoField(primary_key=True, verbose_name='ID', auto_created=True, serialize=False)),
-                ('view_uid', uuidfield.fields.UUIDField(editable=False, unique=True, max_length=32, blank=True)),
+                uuid_field,
                 ('subject', models.CharField(max_length=256)),
                 ('from_address', models.CharField(default='', max_length=256)),
                 ('uid', models.CharField(null=True, default=None, unique=True, max_length=100)),
