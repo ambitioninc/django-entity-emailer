@@ -60,6 +60,21 @@ class ConvertEventsToEmailsTest(TestCase):
         EntityEmailerInterface.convert_events_to_emails()
         self.assertFalse(Email.objects.exists())
 
+    def test_default_from_email(self):
+        # settings.DEFAULT_FROM_EMAIL is already set to test@example.com
+        G(Event, context={})
+        EntityEmailerInterface.convert_events_to_emails()
+        email = Email.objects.get()
+
+        self.assertEqual(email.from_address, 'test@example.com')
+
+    def test_custom_from_email(self):
+        G(Event, context={'from_address': 'custom@example.com'})
+        EntityEmailerInterface.convert_events_to_emails()
+        email = Email.objects.get()
+
+        self.assertEqual(email.from_address, 'custom@example.com')
+
     @freeze_time('2013-1-2')
     def test_basic_only_following_false_subscription(self):
         source = G(Source)
