@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+0.14.1
+------
+* Added ability to set custom From address
+
 0.14.0
 ------
 * Add Python 3.6 support
