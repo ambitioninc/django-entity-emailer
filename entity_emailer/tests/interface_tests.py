@@ -62,14 +62,33 @@ class ConvertEventsToEmailsTest(TestCase):
 
     def test_default_from_email(self):
         # settings.DEFAULT_FROM_EMAIL is already set to test@example.com
-        G(Event, context={})
+        source = G(Source)
+        e = G(Entity)
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=False, sub_entity_kind=None)
+        email_context = {
+            'entity_emailer_template': 'template',
+            'entity_emailer_subject': 'hi',
+        }
+        event = G(Event, source=source, context=email_context)
+        G(EventActor, event=event, entity=e)
+
         EntityEmailerInterface.convert_events_to_emails()
         email = Email.objects.get()
 
         self.assertEqual(email.from_address, 'test@example.com')
 
     def test_custom_from_email(self):
-        G(Event, context={'from_address': 'custom@example.com'})
+        source = G(Source)
+        e = G(Entity)
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=False, sub_entity_kind=None)
+        email_context = {
+            'entity_emailer_template': 'template',
+            'entity_emailer_subject': 'hi',
+            'from_address': 'custom@example.com'
+        }
+        event = G(Event, source=source, context=email_context)
+        G(EventActor, event=event, entity=e)
+
         EntityEmailerInterface.convert_events_to_emails()
         email = Email.objects.get()
 
