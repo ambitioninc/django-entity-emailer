@@ -34,7 +34,6 @@ class EntityEmailerInterface(object):
         # Fetch the contexts of every event so that they may be rendered
         context_loader.load_contexts_and_renderers([e.event for e in to_send], [email_medium])
 
-        default_from_email = get_from_email_address()
         emails = []
         for email in to_send:
             to_email_addresses = get_subscribed_email_addresses(email)
@@ -42,7 +41,7 @@ class EntityEmailerInterface(object):
                 text_message, html_message = email.render(email_medium)
                 message = create_email_message(
                     to_emails=to_email_addresses,
-                    from_email=email.from_address or default_from_email,
+                    from_email=email.from_address or get_from_email_address(),
                     subject=email.subject or extract_email_subject_from_html_content(html_message),
                     text=text_message,
                     html=html_message,
@@ -62,6 +61,14 @@ class EntityEmailerInterface(object):
         # Get the email medium
         email_medium = get_medium()
 
+        # Get the default from email
+        default_from_email = get_from_email_address()
+
         # Find any unseen events and create unsent email objects
         for event, targets in email_medium.events_targets(seen=False, mark_seen=True):
-            Email.objects.create_email(event=event, recipients=targets)
+
+            # Check the event's context for a from_address, otherwise fallback to default
+            from_address = event.context.get('from_address') or default_from_email
+
+            # Create the emails
+            Email.objects.create_email(event=event, from_address=from_address, recipients=targets)

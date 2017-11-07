@@ -30,3 +30,5 @@ entity_emailer_db
 
 # Pycharm
 .idea/
+
+activate.sh
