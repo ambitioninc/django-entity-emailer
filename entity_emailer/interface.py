@@ -41,7 +41,7 @@ class EntityEmailerInterface(object):
                 text_message, html_message = email.render(email_medium)
                 message = create_email_message(
                     to_emails=to_email_addresses,
-                    from_email=email.from_address,
+                    from_email=email.from_address or get_from_email_address(),
                     subject=email.subject or extract_email_subject_from_html_content(html_message),
                     text=text_message,
                     html=html_message,
@@ -68,7 +68,7 @@ class EntityEmailerInterface(object):
         for event, targets in email_medium.events_targets(seen=False, mark_seen=True):
 
             # Check the event's context for a from_address, otherwise fallback to default
-            from_address = event.context.get('from_address', default_from_email)
+            from_address = event.context.get('from_address') or default_from_email
 
             # Create the emails
             Email.objects.create_email(event=event, from_address=from_address, recipients=targets)
