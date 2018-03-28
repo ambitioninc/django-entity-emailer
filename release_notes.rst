@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+0.14.2
+------
+* Removed celery dependencies and autodiscover from settings file
+
 0.14.1
 ------
 * Added ability to set custom From Address
