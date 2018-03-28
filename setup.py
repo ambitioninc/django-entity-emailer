@@ -45,12 +45,11 @@ setup(
     license='MIT',
     install_requires=[
         'beautifulsoup4>=4.3.2',
-        'Django>=1.9',
+        'Django>=1.11,<2.0',
         'django-db-mutex>=0.5.0',
         'django-entity>=1.17.0',
         'django-entity-event>=0.8.0',
         'ambition-django-uuidfield>=0.5.0',
-        'celery>=3.1,<4.0',
     ],
     tests_require=[
         'django-dynamic-fixture',
