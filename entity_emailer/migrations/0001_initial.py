@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
+import django.db.models.deletion
 import datetime
 import uuid
 
@@ -31,7 +32,7 @@ class Migration(migrations.Migration):
                 ('uid', models.CharField(null=True, default=None, unique=True, max_length=100)),
                 ('scheduled', models.DateTimeField(null=True, default=datetime.datetime.utcnow)),
                 ('sent', models.DateTimeField(null=True, default=None)),
-                ('event', models.ForeignKey(to='entity_event.Event')),
+                ('event', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='entity_event.Event')),
                 ('recipients', models.ManyToManyField(to='entity.Entity')),
             ],
             options={
