@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+v1.0.0
+------
+* Django 2.0 support
+* Add tox to support more versions
+
+0.14.2
+------
+* Removed celery dependencies and autodiscover from settings file
+
 0.14.1
 ------
 * Added ability to set custom From Address
