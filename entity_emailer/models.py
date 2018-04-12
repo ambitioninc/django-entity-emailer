@@ -50,7 +50,7 @@ class Email(models.Model):
     Emails are viewable online and identified with their view_uid UUID
     """
     view_uid = models.UUIDField(default=uuid.uuid4, editable=False)
-    event = models.ForeignKey(Event, on_delete=models.CASCASE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
     recipients = models.ManyToManyField(Entity)
     subject = models.CharField(max_length=256)
     from_address = models.CharField(max_length=256, default='')
