@@ -36,7 +36,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Framework :: Django',
-        'Framework :: Django :: 1.11',
         'Framework :: Django :: 2.0',
         'Framework :: Django :: 2.1',
         'Framework :: Django :: 2.2',
@@ -44,10 +43,10 @@ setup(
     license='MIT',
     install_requires=[
         'beautifulsoup4>=4.3.2',
-        'Django>=1.11',
-        'django-db-mutex>=1.1.0',
-        'django-entity>=3.1.1',
-        'django-entity-event>=1.1.0',
+        'Django>=2.0',
+        'django-db-mutex>=1.2.0',
+        'django-entity>=4.2.0',
+        'django-entity-event>=1.2.0',
         'ambition-django-uuidfield>=0.5.0',
     ],
     tests_require=[
