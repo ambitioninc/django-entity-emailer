@@ -1,3 +1,5 @@
+from os import path
+
 import re
 from setuptools import setup, find_packages
 
@@ -17,6 +19,20 @@ def get_version():
     else:
         raise RuntimeError('Unable to find version string in {0}.'.format(VERSION_FILE))
 
+
+def get_requirements(requirements_file):
+    """
+    Gets a list of requirements from requirements.txt.
+    """
+    with open(path.join(path.dirname(__file__), 'requirements', requirements_file)) as requirements_file:
+        requirements = requirements_file.readlines()
+
+    requirements = [r.strip() for r in requirements if r.strip()]
+
+    return [
+        r for r in requirements
+        if not r.startswith('#') and not r.startswith('-')
+    ]
 
 setup(
     name='django-entity-emailer',
@@ -41,20 +57,8 @@ setup(
         'Framework :: Django :: 2.2',
     ],
     license='MIT',
-    install_requires=[
-        'beautifulsoup4>=4.3.2',
-        'Django>=2.0',
-        'django-db-mutex>=1.2.0',
-        'django-entity>=4.2.0',
-        'django-entity-event>=1.2.0',
-        'ambition-django-uuidfield>=0.5.0',
-    ],
-    tests_require=[
-        'django-dynamic-fixture',
-        'django-nose>=1.4',
-        'freezegun',
-        'mock',
-    ],
-    test_suite='run_tests.run_tests',
+    install_requires=get_requirements('requirements.txt'),
+    tests_require=get_requirements('requirements-testing.txt'),
+    test_suite='run_tests.run',
     include_package_data=True,
 )
