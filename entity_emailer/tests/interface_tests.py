@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.core import mail
+from django.core.mail import EmailMultiAlternatives
 from django.core.management import call_command
 from django.test import TestCase, SimpleTestCase
 from django.test.utils import override_settings
@@ -342,6 +343,36 @@ class SendUnsentScheduledEmailsTest(TestCase):
         g_email(context={}, scheduled=datetime.min)
         EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(len(mail.outbox), 2)
+
+    @patch('entity_emailer.interface.pre_send')
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
+    @patch.object(Event, 'render', spec_set=True)
+    def test_send_signals(self, render_mock, address_mock, mock_pre_send):
+        """
+        Test that we properly fire signals during the send process
+        """
+
+        # Setup the email
+        render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+        email = g_email(context={
+            'test': 'test'
+        }, scheduled=datetime.min)
+        EntityEmailerInterface.send_unsent_scheduled_emails()
+
+        # Assert that we sent the email
+        self.assertEqual(len(mail.outbox), 1)
+
+        # Assert that we called the pre send signal with the proper values
+        name, args, kwargs = mock_pre_send.send.mock_calls[0]
+        self.assertEqual(kwargs['sender'], '1')
+        self.assertEqual(kwargs['email'], email)
+        self.assertEqual(kwargs['event'], email.event)
+        self.assertEqual(kwargs['context'], {
+            'test': 'test',
+            'entity_emailer_id': str(email.view_uid)
+        })
+        self.assertIsInstance(kwargs['message'], EmailMultiAlternatives)
 
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
