@@ -1,9 +1,12 @@
+import sys
+
 from datetime import datetime
 
 from django.core import mail
 from entity_event import context_loader
 
 from entity_emailer.models import Email
+from entity_emailer.signals import pre_send
 
 from entity_emailer.utils import get_medium, get_from_email_address, get_subscribed_email_addresses, \
     create_email_message, extract_email_subject_from_html_content
@@ -26,7 +29,7 @@ class EntityEmailerInterface(object):
             scheduled__lte=current_time,
             sent__isnull=True
         ).select_related(
-            'event'
+            'event__source'
         ).prefetch_related(
             'recipients'
         )
@@ -38,7 +41,10 @@ class EntityEmailerInterface(object):
         for email in to_send:
             to_email_addresses = get_subscribed_email_addresses(email)
             if to_email_addresses:
+                # Render the email
                 text_message, html_message = email.render(email_medium)
+
+                # Create the email
                 message = create_email_message(
                     to_emails=to_email_addresses,
                     from_email=email.from_address or get_from_email_address(),
@@ -46,6 +52,17 @@ class EntityEmailerInterface(object):
                     text=text_message,
                     html=html_message,
                 )
+
+                # Fire the pre send signal
+                pre_send.send(
+                    sender=sys.intern(email.event.source.name),
+                    email=email,
+                    event=email.event,
+                    context=email.event.context,
+                    message=message,
+                )
+
+                # Add the email to the list of emails that need to be sent
                 emails.append(message)
 
         connection = mail.get_connection()
