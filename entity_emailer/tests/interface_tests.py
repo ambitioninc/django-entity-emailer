@@ -365,7 +365,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
 
         # Assert that we called the pre send signal with the proper values
         name, args, kwargs = mock_pre_send.send.mock_calls[0]
-        self.assertEqual(kwargs['sender'], '1')
+        self.assertEqual(kwargs['sender'], email.event.source.name)
         self.assertEqual(kwargs['email'], email)
         self.assertEqual(kwargs['event'], email.event)
         self.assertEqual(kwargs['context'], {
