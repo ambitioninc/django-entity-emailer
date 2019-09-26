@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+v1.1.1
+------
+* Add `pre_send` signal
+
 v1.1.0
 ------
 * Python 3.7
