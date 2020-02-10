@@ -1,5 +1,5 @@
 coverage
-django-dynamic-fixture
+django-dynamic-fixture<=2.0.0
 django-nose
 flake8
 freezegun

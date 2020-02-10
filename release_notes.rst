@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+v1.1.2
+------
+* Handle email render exceptions
+* Add `exception` field
+* Add `email_exception` signal
+
 v1.1.1
 ------
 * Add `pre_send` signal

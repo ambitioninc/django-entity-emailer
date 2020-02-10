@@ -60,7 +60,12 @@ class Email(models.Model):
     # allows for a different schedule to be set (to schedule the email for some
     # time in the future), which would not be possible with an auto_add_now=True.
     scheduled = models.DateTimeField(null=True, default=datetime.utcnow)
+
+    # The time that the email was actually sent, or None if the email is still waiting to be sent
     sent = models.DateTimeField(null=True, default=None)
+
+    # Any exception that occurred when attempting to send the email last
+    exception = models.TextField(default=None, null=True)
 
     objects = EmailManager()
 
