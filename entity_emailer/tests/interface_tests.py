@@ -412,6 +412,38 @@ class SendUnsentScheduledEmailsTest(TestCase):
         sent_email = Email.objects.filter(sent__isnull=False)
         self.assertEqual(sent_email.count(), 1)
 
+    @patch('entity_emailer.interface.email_exception')
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
+    @patch.object(Event, 'render', spec_set=True)
+    def test_exceptions(self, render_mock, address_mock, mock_email_exception):
+        """
+        Test that we properly handle when an exception occurs
+        """
+
+        # Mock the render method to raise an exception that we should properly catch
+        render_mock.side_effect = [
+            Exception('test'),
+            ['<p>This is a test html email.</p>', 'This is a test text email.']
+        ]
+        address_mock.return_value = ['test1@example.com', 'test2@example.com']
+
+        # Create a test emails to send
+        g_email(context={}, scheduled=datetime.min)
+        g_email(context={
+            'test': 'test'
+        }, scheduled=datetime.min)
+
+        # Send the emails
+        EntityEmailerInterface.send_unsent_scheduled_emails()
+
+        # Assert that both emails were marked as sent
+        self.assertEqual(Email.objects.filter(sent__isnull=False).count(), 2)
+
+        # Assert that one email raised an exception
+        exception_email = Email.objects.get(sent__isnull=False, exception__isnull=False)
+        self.assertIsNotNone(exception_email)
+        self.assertTrue('Exception: test' in exception_email.exception)
+
 
 class CreateEmailObjectTest(TestCase):
     def test_no_html(self):
