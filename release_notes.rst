@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+v1.2.0
+------
+* Added bulk interface for converting to emails
+
 v1.1.2
 ------
 * Handle email render exceptions
