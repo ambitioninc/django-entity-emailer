@@ -1,5 +1,5 @@
 beautifulsoup4>=4.3.2
-Django>=2.0,<3.0
+Django>=2.2
 django-db-mutex>=1.2.0
 django-entity>=4.2.0
 django-entity-event>=1.2.0
