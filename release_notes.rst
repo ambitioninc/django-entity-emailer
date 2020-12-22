@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-v1.2.0
+v2.0.0
 ------
 * Added bulk interface for converting to emails
 * Add support for python 3.8
