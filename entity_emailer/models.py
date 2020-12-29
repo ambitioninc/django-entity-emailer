@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.db import models
+from django.db import models, transaction
 from entity.models import Entity
 from entity_event.models import Event
 import uuid
@@ -25,6 +25,41 @@ class EmailManager(models.Manager):
         email.scheduled = scheduled
         email.save()
         return email
+
+    @transaction.atomic
+    def create_emails(self, email_params_list):
+        """
+        :param email_params_list: A list of dicts containing the keys for the create_email method
+        :return: list of Email objects that were created
+        """
+        emails_to_create = []
+        recipient_entities_per_email = []
+
+        # Build the emails to create and keep track of recipients
+        for kwargs in email_params_list:
+            scheduled = kwargs.pop('scheduled', datetime.utcnow())
+            recipients = kwargs.pop('recipients', [])
+            emails_to_create.append(Email(scheduled=scheduled, **kwargs))
+            recipient_entities_per_email.append(recipients)
+
+        # Bulk create the emails
+        emails = Email.objects.bulk_create(emails_to_create)
+
+        # Build list of recipient through relationships to create
+        recipients_to_create = []
+        for i, recipient_entities in enumerate(recipient_entities_per_email):
+            for recipient_entity in recipient_entities:
+                recipients_to_create.append(
+                    Email.recipients.through(
+                        email_id=emails[i].id,
+                        entity_id=recipient_entity.id,
+                    )
+                )
+
+        # Bulk create the recipient relationships
+        Email.recipients.through.objects.bulk_create(recipients_to_create)
+
+        return emails
 
 
 class Email(models.Model):

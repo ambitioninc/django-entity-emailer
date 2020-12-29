@@ -120,3 +120,33 @@ class EntityEmailerInterface(object):
 
             # Create the emails
             Email.objects.create_email(event=event, from_address=from_address, recipients=targets)
+
+    @staticmethod
+    def bulk_convert_events_to_emails():
+        """
+        Converts unseen events to emails and marks them as seen. Uses the create_emails method to bulk create
+        emails and recipient relationships
+        """
+
+        # Get the email medium
+        email_medium = get_medium()
+
+        # Get the default from email
+        default_from_email = get_from_email_address()
+
+        email_params_list = []
+
+        # Find any unseen events and create unsent email objects
+        for event, targets in email_medium.events_targets(seen=False, mark_seen=True):
+
+            # Check the event's context for a from_address, otherwise fallback to default
+            from_address = event.context.get('from_address') or default_from_email
+
+            email_params_list.append(dict(
+                event=event,
+                from_address=from_address,
+                recipients=targets
+            ))
+
+        # Bulk create the emails
+        Email.objects.create_emails(email_params_list)

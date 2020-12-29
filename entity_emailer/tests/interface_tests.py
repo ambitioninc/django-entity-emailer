@@ -295,6 +295,30 @@ class ConvertEventsToEmailsTest(TestCase):
             self.assertEquals(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
+    def test_bulk_multiple_events_only_following_false(self):
+        source = G(Source)
+        e = G(Entity)
+        other_e = G(Entity)
+
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=False)
+        G(Subscription, entity=other_e, source=source, medium=self.email_medium, only_following=False)
+        email_context = {
+            'entity_emailer_template': 'template',
+            'entity_emailer_subject': 'hi',
+        }
+        G(Event, source=source, context=email_context)
+        G(Event, source=source, context=email_context)
+
+        EntityEmailerInterface.bulk_convert_events_to_emails()
+
+        self.assertEquals(Email.objects.count(), 2)
+        for email in Email.objects.all():
+            self.assertEquals(set(email.recipients.all()), set([e, other_e]))
+            self.assertEquals(email.event.context, email_context)
+            self.assertEquals(email.subject, '')
+            self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+
+    @freeze_time('2013-1-2')
     def test_multiple_events_only_following_true(self):
         source = G(Source)
         e = G(Entity)
