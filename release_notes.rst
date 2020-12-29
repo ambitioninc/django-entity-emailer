@@ -4,7 +4,6 @@ Release Notes
 v2.0.0
 ------
 * Added bulk interface for converting to emails
-* Add support for python 3.8
 * Add support for django 3.0, 3.1
 
 v1.1.2
