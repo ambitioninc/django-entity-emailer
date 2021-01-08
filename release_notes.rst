@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+v2.0.1
+------
+* Fix for handling single failures in a batch of outgoing emails
+
 v2.0.0
 ------
 * Added bulk interface for converting to emails
