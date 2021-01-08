@@ -1,3 +1,4 @@
+import json
 import sys
 import traceback
 
@@ -18,8 +19,8 @@ class EntityEmailerInterface(object):
     An api interface to do things within entity emailer
     """
 
-    @staticmethod
-    def send_unsent_scheduled_emails():
+    @classmethod
+    def send_unsent_scheduled_emails(cls):
         """
         Send out any scheduled emails that are unsent
         """
@@ -43,7 +44,7 @@ class EntityEmailerInterface(object):
         context_loader.load_contexts_and_renderers([e.event for e in to_send], [email_medium])
 
         # Keep track of what emails we will be sending
-        emails = []
+        emails_to_send = []
 
         # Loop over each email and generate the recipients, and message
         # and handle any exceptions that may occur
@@ -80,22 +81,22 @@ class EntityEmailerInterface(object):
                 )
 
                 # Add the email to the list of emails that need to be sent
-                emails.append(message)
-            except Exception as e:
+                emails_to_send.append({
+                    'message': message,
+                    'model': email,
+                })
+            except Exception:
                 # Save the exception on the model
-                email.exception = traceback.format_exc()
-                email.save(update_fields=['exception'])
-
-                # Fire the email exception event
-                email_exception.send(
-                    sender=Email,
-                    email=email,
-                    exception=e
-                )
+                cls.save_email_exception(email, traceback.format_exc())
 
         # Send all the emails that were generated properly
-        connection = mail.get_connection()
-        connection.send_messages(emails)
+        with mail.get_connection() as connection:
+            for email in emails_to_send:
+                try:
+                    # Send mail
+                    connection.send_message(email.get('message'))
+                except Exception as e:
+                    cls.save_email_exception(email.get('model'), e)
 
         # Update the emails as sent
         to_send.update(sent=current_time)
@@ -150,3 +151,22 @@ class EntityEmailerInterface(object):
 
         # Bulk create the emails
         Email.objects.create_emails(email_params_list)
+
+    @classmethod
+    def save_email_exception(cls, email, e):
+        # Save the error to the email model
+        exception_message = str(e)
+
+        # Duck typing exception for sendgrid api backend rather than place hard dependency
+        if hasattr(e, 'to_dict'):
+            exception_message += ': {}'.format(json.dumps(e.to_dict()))
+
+        email.exception = exception_message
+        email.save(update_fields=['exception'])
+
+        # Fire the email exception event
+        email_exception.send(
+            sender=Email,
+            email=email,
+            exception=e
+        )
