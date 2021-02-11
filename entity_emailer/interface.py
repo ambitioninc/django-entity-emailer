@@ -121,8 +121,8 @@ class EntityEmailerInterface(object):
             # Create the emails
             Email.objects.create_email(event=event, from_address=from_address, recipients=targets)
 
-    @transaction.atomic
     @staticmethod
+    @transaction.atomic
     def bulk_convert_events_to_emails():
         """
         Converts unseen events to emails and marks them as seen. Uses the create_emails method to bulk create
