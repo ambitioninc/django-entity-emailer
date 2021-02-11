@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+v2.0.1
+------
+* Fix unique constraint when bulk creating emails
+
 v2.0.0
 ------
 * Added bulk interface for converting to emails
