@@ -1,5 +1,7 @@
 from datetime import datetime
+import json
 
+from django.conf import settings
 from django.core import mail
 from django.core.mail import EmailMultiAlternatives
 from django.core.management import call_command
@@ -399,8 +401,11 @@ class SendUnsentScheduledEmailsTest(TestCase):
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         g_email(context={}, scheduled=datetime.min)
         g_email(context={}, scheduled=datetime.min)
-        EntityEmailerInterface.send_unsent_scheduled_emails()
-        self.assertEqual(len(mail.outbox), 2)
+
+        with patch(settings.EMAIL_BACKEND) as mock_connection:
+            EntityEmailerInterface.send_unsent_scheduled_emails()
+
+            self.assertEqual(2, mock_connection.return_value.__enter__.return_value.send_message.call_count)
 
     @patch('entity_emailer.interface.pre_send')
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
@@ -416,21 +421,23 @@ class SendUnsentScheduledEmailsTest(TestCase):
         email = g_email(context={
             'test': 'test'
         }, scheduled=datetime.min)
-        EntityEmailerInterface.send_unsent_scheduled_emails()
 
-        # Assert that we sent the email
-        self.assertEqual(len(mail.outbox), 1)
+        with patch(settings.EMAIL_BACKEND) as mock_connection:
+            EntityEmailerInterface.send_unsent_scheduled_emails()
 
-        # Assert that we called the pre send signal with the proper values
-        name, args, kwargs = mock_pre_send.send.mock_calls[0]
-        self.assertEqual(kwargs['sender'], email.event.source.name)
-        self.assertEqual(kwargs['email'], email)
-        self.assertEqual(kwargs['event'], email.event)
-        self.assertEqual(kwargs['context'], {
-            'test': 'test',
-            'entity_emailer_id': str(email.view_uid)
-        })
-        self.assertIsInstance(kwargs['message'], EmailMultiAlternatives)
+            # Assert that we sent the email
+            self.assertEqual(1, mock_connection.return_value.__enter__.return_value.send_message.call_count)
+
+            # Assert that we called the pre send signal with the proper values
+            name, args, kwargs = mock_pre_send.send.mock_calls[0]
+            self.assertEqual(kwargs['sender'], email.event.source.name)
+            self.assertEqual(kwargs['email'], email)
+            self.assertEqual(kwargs['event'], email.event)
+            self.assertEqual(kwargs['context'], {
+                'test': 'test',
+                'entity_emailer_id': str(email.view_uid)
+            })
+            self.assertIsInstance(kwargs['message'], EmailMultiAlternatives)
 
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
@@ -439,8 +446,12 @@ class SendUnsentScheduledEmailsTest(TestCase):
         address_mock.return_value = ['test1@example.com', 'test2@example.com']
         from_address = 'test@example.com'
         g_email(context={}, from_address=from_address, scheduled=datetime.min)
-        EntityEmailerInterface.send_unsent_scheduled_emails()
-        self.assertEqual(mail.outbox[0].from_email, from_address)
+
+        with patch(settings.EMAIL_BACKEND) as mock_connection:
+            EntityEmailerInterface.send_unsent_scheduled_emails()
+
+            args = mock_connection.return_value.__enter__.return_value.send_message.call_args
+            self.assertEqual(args[0][0].from_email, from_address)
 
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
@@ -492,15 +503,57 @@ class SendUnsentScheduledEmailsTest(TestCase):
         }, scheduled=datetime.min)
 
         # Send the emails
-        EntityEmailerInterface.send_unsent_scheduled_emails()
+        with patch(settings.EMAIL_BACKEND) as mock_connection:
+            EntityEmailerInterface.send_unsent_scheduled_emails()
 
-        # Assert that both emails were marked as sent
-        self.assertEqual(Email.objects.filter(sent__isnull=False).count(), 2)
+            # Assert that both emails were marked as sent
+            self.assertEqual(Email.objects.filter(sent__isnull=False).count(), 2)
 
-        # Assert that one email raised an exception
-        exception_email = Email.objects.get(sent__isnull=False, exception__isnull=False)
-        self.assertIsNotNone(exception_email)
-        self.assertTrue('Exception: test' in exception_email.exception)
+            # Assert that only one email is actually sent through backend
+            self.assertEquals(1, mock_connection.call_count)
+            # Assert that one email raised an exception
+            exception_email = Email.objects.get(sent__isnull=False, exception__isnull=False)
+            self.assertIsNotNone(exception_email)
+            self.assertTrue('Exception: test' in exception_email.exception)
+
+    @patch.object(Event, 'render', spec_set=True)
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
+    def test_send_exceptions(self, mock_get_subscribed_addresses, mock_render):
+        """
+        Verifies that when a single email raises an exception from within the backend, the batch is still
+        updated as sent and the failed email is saved with the exception
+        """
+        # Create test emails to send
+        g_email(context={}, scheduled=datetime.min)
+        failed_email = g_email(context={}, scheduled=datetime.min)
+        mock_get_subscribed_addresses.return_value = ['test1@example.com']
+        mock_render.return_value = ('foo', 'bar',)
+
+        # Verify baseline, namely that both emails are not marked as sent and that neither has an exception saved
+        self.assertEquals(2, Email.objects.filter(sent__isnull=True).count())
+
+        class TestEmailSendMessageException(Exception):
+            def to_dict(self):
+                return {'message': str(self)}
+
+        with patch(settings.EMAIL_BACKEND) as mock_connection:
+            # Mock side effects for sending emails
+            mock_connection.return_value.__enter__.return_value.send_message.side_effect = [
+                None,
+                TestEmailSendMessageException('test'),
+            ]
+
+            EntityEmailerInterface.send_unsent_scheduled_emails()
+
+        # Verify that both emails are marked as sent
+        self.assertEquals(2, Email.objects.filter(sent__isnull=False).count())
+        # Verify that the failed email was saved with the exception
+        actual_failed_email = Email.objects.get(sent__isnull=False, exception__isnull=False)
+        self.assertEquals(failed_email.id, actual_failed_email.id)
+        self.assertEquals(
+            'test: {}'.format(json.dumps({'message': 'test'})),
+            actual_failed_email.exception
+        )
 
 
 class CreateEmailObjectTest(TestCase):
