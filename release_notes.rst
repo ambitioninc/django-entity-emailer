@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+v2.0.2
+------
+* Fix unique constraint when bulk creating emails
+
 v2.0.1
 ------
 * Fix for handling single failures in a batch of outgoing emails
