@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+v2.0.0.2
+------
+* Atomic decorator on event fetching
+
 v2.0.0.1
 ------
 * Fix unique constraint when bulk creating emails

@@ -2,7 +2,7 @@ import sys
 import traceback
 
 from datetime import datetime
-
+from django.db import transaction
 from django.core import mail
 from entity_event import context_loader
 
@@ -121,6 +121,7 @@ class EntityEmailerInterface(object):
             # Create the emails
             Email.objects.create_email(event=event, from_address=from_address, recipients=targets)
 
+    @transaction.atomic
     @staticmethod
     def bulk_convert_events_to_emails():
         """
