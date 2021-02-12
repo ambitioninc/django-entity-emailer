@@ -405,7 +405,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         with patch(settings.EMAIL_BACKEND) as mock_connection:
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
-            self.assertEqual(2, mock_connection.return_value.__enter__.return_value.send_message.call_count)
+            self.assertEqual(2, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
 
     @patch('entity_emailer.interface.pre_send')
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
@@ -426,7 +426,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
             # Assert that we sent the email
-            self.assertEqual(1, mock_connection.return_value.__enter__.return_value.send_message.call_count)
+            self.assertEqual(1, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
 
             # Assert that we called the pre send signal with the proper values
             name, args, kwargs = mock_pre_send.send.mock_calls[0]
@@ -450,7 +450,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         with patch(settings.EMAIL_BACKEND) as mock_connection:
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
-            args = mock_connection.return_value.__enter__.return_value.send_message.call_args
+            args = mock_connection.return_value.__enter__.return_value.send_messages.call_args
             self.assertEqual(args[0][0].from_email, from_address)
 
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
@@ -538,7 +538,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
 
         with patch(settings.EMAIL_BACKEND) as mock_connection:
             # Mock side effects for sending emails
-            mock_connection.return_value.__enter__.return_value.send_message.side_effect = [
+            mock_connection.return_value.__enter__.return_value.send_messages.side_effect = [
                 None,
                 TestEmailSendMessageException('test'),
             ]
