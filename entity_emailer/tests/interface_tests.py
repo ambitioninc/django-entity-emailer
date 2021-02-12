@@ -298,10 +298,15 @@ class ConvertEventsToEmailsTest(TestCase):
 
     @freeze_time('2013-1-2')
     def test_bulk_multiple_events_only_following_false(self):
+        """
+        Handles bulk creating events and tests the unique constraint of the duplicated subscription which would cause
+        a bulk create error if it wasn't handled
+        """
         source = G(Source)
         e = G(Entity)
         other_e = G(Entity)
 
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=False)
         G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=False)
         G(Subscription, entity=other_e, source=source, medium=self.email_medium, only_following=False)
         email_context = {
@@ -319,6 +324,35 @@ class ConvertEventsToEmailsTest(TestCase):
             self.assertEquals(email.event.context, email_context)
             self.assertEquals(email.subject, '')
             self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+
+    @freeze_time('2013-1-2')
+    def test_bulk_multiple_events_only_following_true(self):
+        """
+        Handles bulk creating events and tests the unique constraint of the duplicated subscription which would cause
+        a bulk create error if it wasn't handled
+        """
+        source = G(Source)
+        e = G(Entity)
+        other_e = G(Entity)
+
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=True)
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=True)
+        G(Subscription, entity=other_e, source=source, medium=self.email_medium, only_following=True)
+        email_context = {
+            'entity_emailer_template': 'template',
+            'entity_emailer_subject': 'hi',
+        }
+        G(Event, source=source, context=email_context)
+        event = G(Event, source=source, context=email_context)
+        G(EventActor, event=event, entity=e)
+
+        EntityEmailerInterface.bulk_convert_events_to_emails()
+
+        email = Email.objects.get()
+        self.assertEquals(set(email.recipients.all()), set([e]))
+        self.assertEquals(email.event.context, email_context)
+        self.assertEquals(email.subject, '')
+        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_multiple_events_only_following_true(self):
