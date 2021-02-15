@@ -47,14 +47,20 @@ class EmailManager(models.Manager):
 
         # Build list of recipient through relationships to create
         recipients_to_create = []
+
+        # Keep track of unique pairs to avoid unique constraint on through relationship
+        email_entity_pairs = set()
         for i, recipient_entities in enumerate(recipient_entities_per_email):
             for recipient_entity in recipient_entities:
-                recipients_to_create.append(
-                    Email.recipients.through(
-                        email_id=emails[i].id,
-                        entity_id=recipient_entity.id,
+                if (emails[i].id, recipient_entity.id) not in email_entity_pairs:
+                    email_entity_pairs.add((emails[i].id, recipient_entity.id))
+
+                    recipients_to_create.append(
+                        Email.recipients.through(
+                            email_id=emails[i].id,
+                            entity_id=recipient_entity.id,
+                        )
                     )
-                )
 
         # Bulk create the recipient relationships
         Email.recipients.through.objects.bulk_create(recipients_to_create)
