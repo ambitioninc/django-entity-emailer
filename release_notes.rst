@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+v2.0.4
+------
+* Bugfix for updated interface
+
 v2.0.3
 ------
 * Merging v2 hotfixes

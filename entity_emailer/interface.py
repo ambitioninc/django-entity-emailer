@@ -94,7 +94,7 @@ class EntityEmailerInterface(object):
             for email in emails_to_send:
                 try:
                     # Send mail
-                    connection.send_messages(email.get('message'))
+                    connection.send_messages([email.get('message')])
                 except Exception as e:
                     cls.save_email_exception(email.get('model'), e)
 

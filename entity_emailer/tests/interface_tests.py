@@ -451,7 +451,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
             args = mock_connection.return_value.__enter__.return_value.send_messages.call_args
-            self.assertEqual(args[0][0].from_email, from_address)
+            self.assertEqual(args[0][0][0].from_email, from_address)
 
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
