@@ -1,13 +1,25 @@
 Release Notes
 =============
 
-v2.0.2
+v2.0.4
 ------
-* Fix unique constraint when bulk creating emails
+* Bugfix for updated interface
+
+v2.0.3
+------
+* Merging v2 hotfixes
 
 v2.0.1
 ------
 * Fix for handling single failures in a batch of outgoing emails
+
+v2.0.0.2
+------
+* Atomic decorator on event fetching
+
+v2.0.0.1
+------
+* Fix unique constraint when bulk creating emails
 
 v2.0.0
 ------

@@ -326,6 +326,35 @@ class ConvertEventsToEmailsTest(TestCase):
             self.assertEquals(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
+    def test_bulk_multiple_events_only_following_true(self):
+        """
+        Handles bulk creating events and tests the unique constraint of the duplicated subscription which would cause
+        a bulk create error if it wasn't handled
+        """
+        source = G(Source)
+        e = G(Entity)
+        other_e = G(Entity)
+
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=True)
+        G(Subscription, entity=e, source=source, medium=self.email_medium, only_following=True)
+        G(Subscription, entity=other_e, source=source, medium=self.email_medium, only_following=True)
+        email_context = {
+            'entity_emailer_template': 'template',
+            'entity_emailer_subject': 'hi',
+        }
+        G(Event, source=source, context=email_context)
+        event = G(Event, source=source, context=email_context)
+        G(EventActor, event=event, entity=e)
+
+        EntityEmailerInterface.bulk_convert_events_to_emails()
+
+        email = Email.objects.get()
+        self.assertEquals(set(email.recipients.all()), set([e]))
+        self.assertEquals(email.event.context, email_context)
+        self.assertEquals(email.subject, '')
+        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+
+    @freeze_time('2013-1-2')
     def test_multiple_events_only_following_true(self):
         source = G(Source)
         e = G(Entity)
@@ -405,7 +434,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         with patch(settings.EMAIL_BACKEND) as mock_connection:
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
-            self.assertEqual(2, mock_connection.return_value.__enter__.return_value.send_message.call_count)
+            self.assertEqual(2, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
 
     @patch('entity_emailer.interface.pre_send')
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
@@ -426,7 +455,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
             # Assert that we sent the email
-            self.assertEqual(1, mock_connection.return_value.__enter__.return_value.send_message.call_count)
+            self.assertEqual(1, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
 
             # Assert that we called the pre send signal with the proper values
             name, args, kwargs = mock_pre_send.send.mock_calls[0]
@@ -450,8 +479,8 @@ class SendUnsentScheduledEmailsTest(TestCase):
         with patch(settings.EMAIL_BACKEND) as mock_connection:
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
-            args = mock_connection.return_value.__enter__.return_value.send_message.call_args
-            self.assertEqual(args[0][0].from_email, from_address)
+            args = mock_connection.return_value.__enter__.return_value.send_messages.call_args
+            self.assertEqual(args[0][0][0].from_email, from_address)
 
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
@@ -538,7 +567,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
 
         with patch(settings.EMAIL_BACKEND) as mock_connection:
             # Mock side effects for sending emails
-            mock_connection.return_value.__enter__.return_value.send_message.side_effect = [
+            mock_connection.return_value.__enter__.return_value.send_messages.side_effect = [
                 None,
                 TestEmailSendMessageException('test'),
             ]
