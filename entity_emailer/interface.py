@@ -3,7 +3,7 @@ import sys
 import traceback
 
 from datetime import datetime
-
+from django.db import transaction
 from django.core import mail
 from entity_event import context_loader
 
@@ -94,7 +94,7 @@ class EntityEmailerInterface(object):
             for email in emails_to_send:
                 try:
                     # Send mail
-                    connection.send_message(email.get('message'))
+                    connection.send_messages([email.get('message')])
                 except Exception as e:
                     cls.save_email_exception(email.get('model'), e)
 
@@ -123,6 +123,7 @@ class EntityEmailerInterface(object):
             Email.objects.create_email(event=event, from_address=from_address, recipients=targets)
 
     @staticmethod
+    @transaction.atomic
     def bulk_convert_events_to_emails():
         """
         Converts unseen events to emails and marks them as seen. Uses the create_emails method to bulk create
