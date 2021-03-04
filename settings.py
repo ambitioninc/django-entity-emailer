@@ -35,6 +35,7 @@ def configure_settings():
             raise RuntimeError('Unsupported test DB {0}'.format(test_db))
 
         settings.configure(
+            ENTITY_EMAILER_MAX_SEND_MESSAGE_TRIES=3,
             DATABASES={
                 'default': db_config,
             },
