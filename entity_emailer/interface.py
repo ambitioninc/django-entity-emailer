@@ -1,15 +1,16 @@
+from datetime import datetime
 import json
 import sys
 import traceback
 
-from datetime import datetime
-from django.db import transaction
+from ambition_utils.transaction import durable
+from django.conf import settings
 from django.core import mail
+from django.db import transaction
 from entity_event import context_loader
 
 from entity_emailer.models import Email
 from entity_emailer.signals import pre_send, email_exception
-
 from entity_emailer.utils import get_medium, get_from_email_address, get_subscribed_email_addresses, \
     create_email_message, extract_email_subject_from_html_content
 
@@ -20,6 +21,7 @@ class EntityEmailerInterface(object):
     """
 
     @classmethod
+    @durable
     def send_unsent_scheduled_emails(cls):
         """
         Send out any scheduled emails that are unsent
@@ -30,7 +32,8 @@ class EntityEmailerInterface(object):
         email_medium = get_medium()
         to_send = Email.objects.filter(
             scheduled__lte=current_time,
-            sent__isnull=True
+            sent__isnull=True,
+            num_tries__lt=settings.ENTITY_EMAILER_MAX_SEND_MESSAGE_TRIES
         ).select_related(
             'event__source'
         ).prefetch_related(
@@ -95,11 +98,12 @@ class EntityEmailerInterface(object):
                 try:
                     # Send mail
                     connection.send_messages([email.get('message')])
+                    # Update the email model sent value
+                    email_model = email.get('model')
+                    email_model.sent = current_time
+                    email_model.save(update_fields=['sent'])
                 except Exception as e:
                     cls.save_email_exception(email.get('model'), e)
-
-        # Update the emails as sent
-        to_send.update(sent=current_time)
 
     @staticmethod
     def convert_events_to_emails():
@@ -163,7 +167,8 @@ class EntityEmailerInterface(object):
             exception_message += ': {}'.format(json.dumps(e.to_dict()))
 
         email.exception = exception_message
-        email.save(update_fields=['exception'])
+        email.num_tries += 1
+        email.save(update_fields=['exception', 'num_tries'])
 
         # Fire the email exception event
         email_exception.send(
