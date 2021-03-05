@@ -105,6 +105,9 @@ class Email(models.Model):
     # The time that the email was actually sent, or None if the email is still waiting to be sent
     sent = models.DateTimeField(null=True, default=None)
 
+    # Number of attempts to send this email message, used only in retry logic
+    num_tries = models.IntegerField(default=0)
+
     # Any exception that occurred when attempting to send the email last
     exception = models.TextField(default=None, null=True)
 

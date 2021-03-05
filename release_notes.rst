@@ -1,13 +1,17 @@
 Release Notes
 =============
 
+v2.1.0
+------
+* More durable handling and retry logic for failures in bulk send unsent emails process
+
 v2.0.4
 ------
 * Bugfix for updated interface
 
-v2.0.3
+v2.0.2
 ------
-* Merging v2 hotfixes
+* Fix unique constraint when bulk creating emails
 
 v2.0.1
 ------

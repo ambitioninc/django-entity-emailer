@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core import mail
 from django.core.mail import EmailMultiAlternatives
 from django.core.management import call_command
+from django.db import utils
 from django.test import TestCase, SimpleTestCase
 from django.test.utils import override_settings
 from django_dynamic_fixture import G
@@ -384,6 +385,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
     def setUp(self):
         G(Medium, name='email')
 
+    @override_settings(DISABLE_DURABILITY_CHECKING=True)
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_all_scheduled_emails_no_email_addresses(self, render_mock, address_mock):
@@ -394,6 +396,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(len(mail.outbox), 0)
 
+    @override_settings(DISABLE_DURABILITY_CHECKING=True)
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_all_scheduled_emails(self, render_mock, address_mock):
@@ -407,6 +410,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
 
             self.assertEqual(2, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
 
+    @override_settings(DISABLE_DURABILITY_CHECKING=True)
     @patch('entity_emailer.interface.pre_send')
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
@@ -439,6 +443,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
             })
             self.assertIsInstance(kwargs['message'], EmailMultiAlternatives)
 
+    @override_settings(DISABLE_DURABILITY_CHECKING=True)
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_email_with_specified_from_address(self, render_mock, address_mock):
@@ -453,6 +458,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
             args = mock_connection.return_value.__enter__.return_value.send_messages.call_args
             self.assertEqual(args[0][0][0].from_email, from_address)
 
+    @override_settings(DISABLE_DURABILITY_CHECKING=True)
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_no_future_emails(self, render_mock, address_mock):
@@ -462,6 +468,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(len(mail.outbox), 0)
 
+    @override_settings(DISABLE_DURABILITY_CHECKING=True)
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_sends_no_sent_emails(self, render_mock, address_mock):
@@ -471,6 +478,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(len(mail.outbox), 0)
 
+    @override_settings(DISABLE_DURABILITY_CHECKING=True)
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
     def test_updates_times(self, render_mock, address_mock):
@@ -481,6 +489,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         sent_email = Email.objects.filter(sent__isnull=False)
         self.assertEqual(sent_email.count(), 1)
 
+    @override_settings(DISABLE_DURABILITY_CHECKING=True)
     @patch('entity_emailer.interface.email_exception')
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
     @patch.object(Event, 'render', spec_set=True)
@@ -506,19 +515,26 @@ class SendUnsentScheduledEmailsTest(TestCase):
         with patch(settings.EMAIL_BACKEND) as mock_connection:
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
-            # Assert that both emails were marked as sent
-            self.assertEqual(Email.objects.filter(sent__isnull=False).count(), 2)
+            # Assert that only one email was marked as sent
+            self.assertEqual(Email.objects.filter(sent__isnull=False).count(), 1)
 
             # Assert that only one email is actually sent through backend
             self.assertEquals(1, mock_connection.call_count)
-            # Assert that one email raised an exception
-            exception_email = Email.objects.get(sent__isnull=False, exception__isnull=False)
+            # Assert that one email raised an exception and that the tries count was updated
+            exception_email = Email.objects.get(exception__isnull=False, num_tries=1)
             self.assertIsNotNone(exception_email)
             self.assertTrue('Exception: test' in exception_email.exception)
 
+    def test_send_unsent_emails_is_durable(self):
+        """
+        Verify that the process to send unsent emails is durable and will not be rolled-back on exit from any caller
+        """
+        self.assertRaises(utils.ProgrammingError, EntityEmailerInterface.send_unsent_scheduled_emails)
+
+    @override_settings(DISABLE_DURABILITY_CHECKING=True, ENTITY_EMAILER_MAX_SEND_MESSAGE_TRIES=2)
     @patch.object(Event, 'render', spec_set=True)
     @patch('entity_emailer.interface.get_subscribed_email_addresses')
-    def test_send_exceptions(self, mock_get_subscribed_addresses, mock_render):
+    def test_send_exceptions_and_retry(self, mock_get_subscribed_addresses, mock_render):
         """
         Verifies that when a single email raises an exception from within the backend, the batch is still
         updated as sent and the failed email is saved with the exception
@@ -545,15 +561,43 @@ class SendUnsentScheduledEmailsTest(TestCase):
 
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
-        # Verify that both emails are marked as sent
-        self.assertEquals(2, Email.objects.filter(sent__isnull=False).count())
+        # Verify that only one email is marked as sent
+        self.assertEquals(1, Email.objects.filter(sent__isnull=False).count())
         # Verify that the failed email was saved with the exception
-        actual_failed_email = Email.objects.get(sent__isnull=False, exception__isnull=False)
+        actual_failed_email = Email.objects.get(exception__isnull=False, num_tries=1)
         self.assertEquals(failed_email.id, actual_failed_email.id)
         self.assertEquals(
             'test: {}'.format(json.dumps({'message': 'test'})),
             actual_failed_email.exception
         )
+
+        # Verify that a subsequent attempt to send unscheduled emails will retry the failed email
+        with patch(settings.EMAIL_BACKEND) as mock_connection:
+            # Mock side effect for sending email
+            mock_connection.return_value.__enter__.return_value.send_messages.side_effect = (
+                TestEmailSendMessageException('test')
+            )
+
+            EntityEmailerInterface.send_unsent_scheduled_emails()
+
+            # Verify only called once, with the failed email
+            self.assertEquals(1, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
+
+        # Verify num tries updated
+        actual_failed_email = Email.objects.get(exception__isnull=False, num_tries=2)
+        self.assertEquals(failed_email.id, actual_failed_email.id)
+
+        # Verify that a subsequent attempt to send unscheduled emails will find no emails to send
+        with patch(settings.EMAIL_BACKEND) as mock_connection:
+
+            EntityEmailerInterface.send_unsent_scheduled_emails()
+
+            # Verify only called once, with the failed email
+            self.assertEquals(0, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
+
+        # Verify num tries not updated
+        actual_failed_email = Email.objects.get(exception__isnull=False, num_tries=2)
+        self.assertEquals(failed_email.id, actual_failed_email.id)
 
 
 class CreateEmailObjectTest(TestCase):
