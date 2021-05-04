@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+v2.1.1
+------
+* Fixed error handling with email backend exceptions that implement to_dict
+
 v2.1.0
 ------
 * More durable handling and retry logic for failures in bulk send unsent emails process

@@ -549,6 +549,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         self.assertEquals(2, Email.objects.filter(sent__isnull=True).count())
 
         class TestEmailSendMessageException(Exception):
+            @property
             def to_dict(self):
                 return {'message': str(self)}
 
@@ -598,6 +599,46 @@ class SendUnsentScheduledEmailsTest(TestCase):
         # Verify num tries not updated
         actual_failed_email = Email.objects.get(exception__isnull=False, num_tries=2)
         self.assertEquals(failed_email.id, actual_failed_email.id)
+
+    @override_settings(DISABLE_DURABILITY_CHECKING=True, ENTITY_EMAILER_MAX_SEND_MESSAGE_TRIES=2)
+    @patch.object(Event, 'render', spec_set=True)
+    @patch('entity_emailer.interface.get_subscribed_email_addresses')
+    def test_send_exception_with_to_dict_method(self, mock_get_subscribed_addresses, mock_render):
+        """
+        Verifies that when a single email raises an exception from within the backend, the batch is still
+        updated as sent and the failed email is saved with the exception
+        """
+        # Create test emails to send
+        g_email(context={}, scheduled=datetime.min)
+        failed_email = g_email(context={}, scheduled=datetime.min)
+        mock_get_subscribed_addresses.return_value = ['test1@example.com']
+        mock_render.return_value = ('foo', 'bar',)
+
+        # Verify baseline, namely that both emails are not marked as sent and that neither has an exception saved
+        self.assertEquals(2, Email.objects.filter(sent__isnull=True).count())
+
+        class TestEmailSendMessageException(Exception):
+            def to_dict(self):
+                return {'message': str(self)}
+
+        with patch(settings.EMAIL_BACKEND) as mock_connection:
+            # Mock side effects for sending emails
+            mock_connection.return_value.__enter__.return_value.send_messages.side_effect = [
+                None,
+                TestEmailSendMessageException('test'),
+            ]
+
+            EntityEmailerInterface.send_unsent_scheduled_emails()
+
+        # Verify that only one email is marked as sent
+        self.assertEquals(1, Email.objects.filter(sent__isnull=False).count())
+        # Verify that the failed email was saved with the exception
+        actual_failed_email = Email.objects.get(exception__isnull=False, num_tries=1)
+        self.assertEquals(failed_email.id, actual_failed_email.id)
+        self.assertEquals(
+            'test: {}'.format(json.dumps({'message': 'test'})),
+            actual_failed_email.exception
+        )
 
 
 class CreateEmailObjectTest(TestCase):
