@@ -163,8 +163,15 @@ class EntityEmailerInterface(object):
         exception_message = str(e)
 
         # Duck typing exception for sendgrid api backend rather than place hard dependency
+        # Actually expecting python_http_client HTTPError here, but we'll support any reasonable interface
+        # with the same name
         if hasattr(e, 'to_dict'):
-            exception_message += ': {}'.format(json.dumps(e.to_dict()))
+            if callable(e.to_dict):
+                exception_dict = e.to_dict()
+            else:
+                exception_dict = e.to_dict
+            # Set the exception message to the exception's serialized dump
+            exception_message += ': {}'.format(json.dumps(exception_dict))
 
         email.exception = exception_message
         email.num_tries += 1
