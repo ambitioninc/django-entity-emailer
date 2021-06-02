@@ -391,10 +391,22 @@ class SendUnsentScheduledEmailsTest(TestCase):
     def test_sends_all_scheduled_emails_no_email_addresses(self, render_mock, address_mock):
         render_mock.return_value = ['<p>This is a test html email.</p>', 'This is a test text email.']
         address_mock.return_value = []
-        g_email(context={}, scheduled=datetime.min)
-        g_email(context={}, scheduled=datetime.min)
+        original_emails = [
+            g_email(context={}, scheduled=datetime.min),
+            g_email(context={}, scheduled=datetime.min)
+        ]
         EntityEmailerInterface.send_unsent_scheduled_emails()
         self.assertEqual(len(mail.outbox), 0)
+
+        # Assert that the emails are still marked as sent
+        sent_emails = Email.objects.filter(
+            id__in=[email.id for email in original_emails],
+            sent__isnull=False
+        )
+        self.assertEqual(
+            set(sent_emails),
+            set(original_emails)
+        )
 
     @override_settings(DISABLE_DURABILITY_CHECKING=True)
     @patch('entity_emailer.interface.get_subscribed_email_addresses')

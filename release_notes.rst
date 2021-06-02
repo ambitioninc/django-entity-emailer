@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+v2.1.2
+------
+* Fix issue for not marking email as sent when no email addresses exist
+
 v2.1.1
 ------
 * Fixed error handling with email backend exceptions that implement to_dict
