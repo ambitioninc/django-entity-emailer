@@ -56,7 +56,10 @@ class EntityEmailerInterface(object):
             to_email_addresses = get_subscribed_email_addresses(email)
 
             # If there are no recipients we can just skip rendering
+            # and mark the email as sent
             if not to_email_addresses:
+                email.sent = current_time
+                email.save(update_fields=['sent'])
                 continue
 
             # If any exceptions occur we will catch the exception and store it as a reference
