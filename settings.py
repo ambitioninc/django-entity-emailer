@@ -73,4 +73,5 @@ def configure_settings():
             TEST_RUNNER='django_nose.NoseTestSuiteRunner',
             NOSE_ARGS=['--nocapture', '--nologcapture', '--verbosity=1'],
             DEFAULT_AUTO_FIELD='django.db.models.AutoField',
+            SECRET_KEY='*',
         )
