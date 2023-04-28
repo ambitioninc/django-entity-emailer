@@ -14,7 +14,7 @@ from entity_event.models import (
     Medium, Source, Subscription, Unsubscription, Event, EventActor
 )
 from freezegun import freeze_time
-from mock import patch
+from unittest.mock import patch
 
 from entity_emailer.interface import EntityEmailerInterface
 from entity_emailer.models import Email
