@@ -3,7 +3,6 @@ from django.test import TestCase
 from django_dynamic_fixture import G
 from entity.models import Entity
 from entity_event.models import Medium, RenderingStyle, ContextRenderer, Source, Event
-import six
 
 from entity_emailer.tests.utils import g_email
 
@@ -30,8 +29,7 @@ class EmailViewTest(TestCase):
         url = reverse('entity_emailer.email', args=[email.view_uid])
         response = self.client.get(url)
         content = response.content
-        if six.PY3:  # pragma: no cover
-            content = content.decode('utf8')
+        content = content.decode('utf8')
 
         self.assertEqual(content, '<html>Hi Swansonbot</html>')
 
@@ -50,8 +48,7 @@ class EmailViewTest(TestCase):
         url = reverse('entity_emailer.email', args=[email.view_uid])
         response = self.client.get(url)
         content = response.content
-        if six.PY3:  # pragma: no cover
-            content = content.decode('utf8')
+        content = content.decode('utf8')
         self.assertEqual(content, 'Hi Swansonbot')
 
     def test_text_and_html_path(self):
@@ -73,7 +70,6 @@ class EmailViewTest(TestCase):
         url = reverse('entity_emailer.email', args=[email.view_uid])
         response = self.client.get(url)
         content = response.content
-        if six.PY3:  # pragma: no cover
-            content = content.decode('utf8')
+        content = content.decode('utf8')
 
         self.assertEqual(content, '<html>Hi Swansonbot</html>')

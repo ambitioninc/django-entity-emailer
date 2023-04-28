@@ -65,10 +65,12 @@ def configure_settings():
                 'OPTIONS': {
                     'context_processors': [
                         'django.contrib.auth.context_processors.auth',
-                        'django.contrib.messages.context_processors.messages'
+                        'django.contrib.messages.context_processors.messages',
+                        'django.template.context_processors.request',
                     ]
                 }
             }],
             TEST_RUNNER='django_nose.NoseTestSuiteRunner',
             NOSE_ARGS=['--nocapture', '--nologcapture', '--verbosity=1'],
+            DEFAULT_AUTO_FIELD='django.db.models.AutoField',
         )
