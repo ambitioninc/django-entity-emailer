@@ -26,28 +26,28 @@ from entity_emailer.utils import extract_email_subject_from_html_content, create
 class ExtractEmailSubjectFromHtmlContentTest(SimpleTestCase):
     def test_blank(self):
         subject = extract_email_subject_from_html_content('')
-        self.assertEquals(subject, '')
+        self.assertEqual(subject, '')
 
     def test_with_title_block(self):
         subject = extract_email_subject_from_html_content('<html><head><title> Hello! </title></head></html>')
-        self.assertEquals(subject, 'Hello!')
+        self.assertEqual(subject, 'Hello!')
 
     def test_wo_title_block_under_40_chars_content(self):
         subject = extract_email_subject_from_html_content(' Small content ')
-        self.assertEquals(subject, 'Small content')
+        self.assertEqual(subject, 'Small content')
 
     def test_wo_title_block_under_40_chars_multiline_content(self):
         subject = extract_email_subject_from_html_content((
             ' Small content \n'
             'that spans multiple lines'
         ))
-        self.assertEquals(subject, 'Small content')
+        self.assertEqual(subject, 'Small content')
 
     def test_wo_title_block_gt_40_chars_content(self):
         subject = extract_email_subject_from_html_content((
             ' This is reallly long content that is greater than 40 chars on the first line. It should have ...'
         ))
-        self.assertEquals(subject, 'This is reallly long content that is gre...')
+        self.assertEqual(subject, 'This is reallly long content that is gre...')
 
 
 class ConvertEventsToEmailsTest(TestCase):
@@ -113,10 +113,10 @@ class ConvertEventsToEmailsTest(TestCase):
         EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
-        self.assertEquals(list(email.recipients.all()), [e])
-        self.assertEquals(email.event.context, email_context)
-        self.assertEquals(email.subject, '')
-        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+        self.assertEqual(list(email.recipients.all()), [e])
+        self.assertEqual(email.event.context, email_context)
+        self.assertEqual(email.subject, '')
+        self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_basic_only_following_false_subscription_marked_seen(self):
@@ -134,10 +134,10 @@ class ConvertEventsToEmailsTest(TestCase):
         EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
-        self.assertEquals(list(email.recipients.all()), [e])
-        self.assertEquals(email.event.context, email_context)
-        self.assertEquals(email.subject, '')
-        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+        self.assertEqual(list(email.recipients.all()), [e])
+        self.assertEqual(email.event.context, email_context)
+        self.assertEqual(email.subject, '')
+        self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_basic_only_following_true_subscription(self):
@@ -160,10 +160,10 @@ class ConvertEventsToEmailsTest(TestCase):
 
         email = Email.objects.get()
         # Since the other_e entity does not follow the se entity, only the e entity receives an email
-        self.assertEquals(set(email.recipients.all()), set([e]))
-        self.assertEquals(email.event.context, email_context)
-        self.assertEquals(email.subject, '')
-        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+        self.assertEqual(set(email.recipients.all()), set([e]))
+        self.assertEqual(email.event.context, email_context)
+        self.assertEqual(email.subject, '')
+        self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_super_entity_only_following_false_subscription(self):
@@ -187,10 +187,10 @@ class ConvertEventsToEmailsTest(TestCase):
         EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
-        self.assertEquals(set(email.recipients.all()), set([e, other_e]))
-        self.assertEquals(email.event.context, email_context)
-        self.assertEquals(email.subject, '')
-        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+        self.assertEqual(set(email.recipients.all()), set([e, other_e]))
+        self.assertEqual(email.event.context, email_context)
+        self.assertEqual(email.subject, '')
+        self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_basic_only_following_true_group_subscription(self):
@@ -214,10 +214,10 @@ class ConvertEventsToEmailsTest(TestCase):
 
         email = Email.objects.get()
         # Both entities are subscribed with a group subscription and are following the super entity of the event
-        self.assertEquals(set(email.recipients.all()), set([e, other_e]))
-        self.assertEquals(email.event.context, email_context)
-        self.assertEquals(email.subject, '')
-        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+        self.assertEqual(set(email.recipients.all()), set([e, other_e]))
+        self.assertEqual(email.event.context, email_context)
+        self.assertEqual(email.subject, '')
+        self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_basic_only_following_false_group_subscription(self):
@@ -241,10 +241,10 @@ class ConvertEventsToEmailsTest(TestCase):
 
         email = Email.objects.get()
         # Both entities are subscribed with a group subscription and are following the super entity of the event
-        self.assertEquals(set(email.recipients.all()), set([e, other_e]))
-        self.assertEquals(email.event.context, email_context)
-        self.assertEquals(email.subject, '')
-        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+        self.assertEqual(set(email.recipients.all()), set([e, other_e]))
+        self.assertEqual(email.event.context, email_context)
+        self.assertEqual(email.subject, '')
+        self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_basic_only_following_false_group_subscription_with_unsubscribed(self):
@@ -268,10 +268,10 @@ class ConvertEventsToEmailsTest(TestCase):
         EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
-        self.assertEquals(set(email.recipients.all()), set([other_e]))
-        self.assertEquals(email.event.context, email_context)
-        self.assertEquals(email.subject, '')
-        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+        self.assertEqual(set(email.recipients.all()), set([other_e]))
+        self.assertEqual(email.event.context, email_context)
+        self.assertEqual(email.subject, '')
+        self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_multiple_events_only_following_false(self):
@@ -290,12 +290,12 @@ class ConvertEventsToEmailsTest(TestCase):
 
         EntityEmailerInterface.convert_events_to_emails()
 
-        self.assertEquals(Email.objects.count(), 2)
+        self.assertEqual(Email.objects.count(), 2)
         for email in Email.objects.all():
-            self.assertEquals(set(email.recipients.all()), set([e, other_e]))
-            self.assertEquals(email.event.context, email_context)
-            self.assertEquals(email.subject, '')
-            self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+            self.assertEqual(set(email.recipients.all()), set([e, other_e]))
+            self.assertEqual(email.event.context, email_context)
+            self.assertEqual(email.subject, '')
+            self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_bulk_multiple_events_only_following_false(self):
@@ -319,12 +319,12 @@ class ConvertEventsToEmailsTest(TestCase):
 
         EntityEmailerInterface.bulk_convert_events_to_emails()
 
-        self.assertEquals(Email.objects.count(), 2)
+        self.assertEqual(Email.objects.count(), 2)
         for email in Email.objects.all():
-            self.assertEquals(set(email.recipients.all()), set([e, other_e]))
-            self.assertEquals(email.event.context, email_context)
-            self.assertEquals(email.subject, '')
-            self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+            self.assertEqual(set(email.recipients.all()), set([e, other_e]))
+            self.assertEqual(email.event.context, email_context)
+            self.assertEqual(email.subject, '')
+            self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_bulk_multiple_events_only_following_true(self):
@@ -350,10 +350,10 @@ class ConvertEventsToEmailsTest(TestCase):
         EntityEmailerInterface.bulk_convert_events_to_emails()
 
         email = Email.objects.get()
-        self.assertEquals(set(email.recipients.all()), set([e]))
-        self.assertEquals(email.event.context, email_context)
-        self.assertEquals(email.subject, '')
-        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+        self.assertEqual(set(email.recipients.all()), set([e]))
+        self.assertEqual(email.event.context, email_context)
+        self.assertEqual(email.subject, '')
+        self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
     @freeze_time('2013-1-2')
     def test_multiple_events_only_following_true(self):
@@ -374,10 +374,10 @@ class ConvertEventsToEmailsTest(TestCase):
         EntityEmailerInterface.convert_events_to_emails()
 
         email = Email.objects.get()
-        self.assertEquals(set(email.recipients.all()), set([e]))
-        self.assertEquals(email.event.context, email_context)
-        self.assertEquals(email.subject, '')
-        self.assertEquals(email.scheduled, datetime(2013, 1, 2))
+        self.assertEqual(set(email.recipients.all()), set([e]))
+        self.assertEqual(email.event.context, email_context)
+        self.assertEqual(email.subject, '')
+        self.assertEqual(email.scheduled, datetime(2013, 1, 2))
 
 
 @freeze_time('2014-01-05')
@@ -531,7 +531,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
             self.assertEqual(Email.objects.filter(sent__isnull=False).count(), 1)
 
             # Assert that only one email is actually sent through backend
-            self.assertEquals(1, mock_connection.call_count)
+            self.assertEqual(1, mock_connection.call_count)
             # Assert that one email raised an exception and that the tries count was updated
             exception_email = Email.objects.get(exception__isnull=False, num_tries=1)
             self.assertIsNotNone(exception_email)
@@ -558,7 +558,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         mock_render.return_value = ('foo', 'bar',)
 
         # Verify baseline, namely that both emails are not marked as sent and that neither has an exception saved
-        self.assertEquals(2, Email.objects.filter(sent__isnull=True).count())
+        self.assertEqual(2, Email.objects.filter(sent__isnull=True).count())
 
         class TestEmailSendMessageException(Exception):
             @property
@@ -575,11 +575,11 @@ class SendUnsentScheduledEmailsTest(TestCase):
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
         # Verify that only one email is marked as sent
-        self.assertEquals(1, Email.objects.filter(sent__isnull=False).count())
+        self.assertEqual(1, Email.objects.filter(sent__isnull=False).count())
         # Verify that the failed email was saved with the exception
         actual_failed_email = Email.objects.get(exception__isnull=False, num_tries=1)
-        self.assertEquals(failed_email.id, actual_failed_email.id)
-        self.assertEquals(
+        self.assertEqual(failed_email.id, actual_failed_email.id)
+        self.assertEqual(
             'test: {}'.format(json.dumps({'message': 'test'})),
             actual_failed_email.exception
         )
@@ -594,11 +594,11 @@ class SendUnsentScheduledEmailsTest(TestCase):
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
             # Verify only called once, with the failed email
-            self.assertEquals(1, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
+            self.assertEqual(1, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
 
         # Verify num tries updated
         actual_failed_email = Email.objects.get(exception__isnull=False, num_tries=2)
-        self.assertEquals(failed_email.id, actual_failed_email.id)
+        self.assertEqual(failed_email.id, actual_failed_email.id)
 
         # Verify that a subsequent attempt to send unscheduled emails will find no emails to send
         with patch(settings.EMAIL_BACKEND) as mock_connection:
@@ -606,11 +606,11 @@ class SendUnsentScheduledEmailsTest(TestCase):
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
             # Verify only called once, with the failed email
-            self.assertEquals(0, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
+            self.assertEqual(0, mock_connection.return_value.__enter__.return_value.send_messages.call_count)
 
         # Verify num tries not updated
         actual_failed_email = Email.objects.get(exception__isnull=False, num_tries=2)
-        self.assertEquals(failed_email.id, actual_failed_email.id)
+        self.assertEqual(failed_email.id, actual_failed_email.id)
 
     @override_settings(DISABLE_DURABILITY_CHECKING=True, ENTITY_EMAILER_MAX_SEND_MESSAGE_TRIES=2)
     @patch.object(Event, 'render', spec_set=True)
@@ -627,7 +627,7 @@ class SendUnsentScheduledEmailsTest(TestCase):
         mock_render.return_value = ('foo', 'bar',)
 
         # Verify baseline, namely that both emails are not marked as sent and that neither has an exception saved
-        self.assertEquals(2, Email.objects.filter(sent__isnull=True).count())
+        self.assertEqual(2, Email.objects.filter(sent__isnull=True).count())
 
         class TestEmailSendMessageException(Exception):
             def to_dict(self):
@@ -643,11 +643,11 @@ class SendUnsentScheduledEmailsTest(TestCase):
             EntityEmailerInterface.send_unsent_scheduled_emails()
 
         # Verify that only one email is marked as sent
-        self.assertEquals(1, Email.objects.filter(sent__isnull=False).count())
+        self.assertEqual(1, Email.objects.filter(sent__isnull=False).count())
         # Verify that the failed email was saved with the exception
         actual_failed_email = Email.objects.get(exception__isnull=False, num_tries=1)
-        self.assertEquals(failed_email.id, actual_failed_email.id)
-        self.assertEquals(
+        self.assertEqual(failed_email.id, actual_failed_email.id)
+        self.assertEqual(
             'test: {}'.format(json.dumps({'message': 'test'})),
             actual_failed_email.exception
         )
