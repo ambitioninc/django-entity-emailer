@@ -1,4 +1,4 @@
-Django>=2.2
+Django>=3.2
 
 django-db-mutex>=2.0.0
 django-entity>=5.0.0
