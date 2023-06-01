@@ -1,4 +1,5 @@
 import os
+import json
 
 from django.conf import settings
 
@@ -16,7 +17,7 @@ def configure_settings():
 
         if test_db is None:
             db_config = {
-                'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                'ENGINE': 'django.db.backends.postgresql',
                 'NAME': 'ambition',
                 'USER': 'postgres',
                 'PASSWORD': '',
@@ -27,12 +28,16 @@ def configure_settings():
             }
         elif test_db == 'postgres':
             db_config = {
-                'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                'ENGINE': 'django.db.backends.postgresql',
                 'USER': 'postgres',
                 'NAME': 'entity',
             }
         else:
             raise RuntimeError('Unsupported test DB {0}'.format(test_db))
+
+        # Check env for db override (used for github actions)
+        if os.environ.get('DB_SETTINGS'):
+            db_config = json.loads(os.environ.get('DB_SETTINGS'))
 
         settings.configure(
             ENTITY_EMAILER_MAX_SEND_MESSAGE_TRIES=3,
