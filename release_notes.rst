@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+v2.2.0
+------
+* Django 4.2 support
+* Drop django 2 support
+* Remove external uuid field dependency
+
 v2.1.2
 ------
 * Fix issue for not marking email as sent when no email addresses exist
