@@ -34,6 +34,7 @@ def get_requirements(requirements_file):
         if not r.startswith('#') and not r.startswith('-')
     ]
 
+
 setup(
     name='django-entity-emailer',
     version=get_version(),
