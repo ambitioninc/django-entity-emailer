@@ -1,8 +1,8 @@
 Django>=3.2
 
 django-db-mutex>=3.1.0
-django-entity>=5.1.1
-django-entity-event>=2.2.1
-ambition-utils>=3.1.5
+django-entity>=6.1.0
+django-entity-event>=3.1.0
+ambition-utils>=3.1.6
 
 beautifulsoup4>=4.3.2
